@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "alwaysOnTop": false,
+        "center": true,
+        "decorations": true,
+        "fullscreen": false,
+        "height": 700,
+        "minHeight": 500,
+        "minWidth": 600,
+        "resizable": true,
+        "skipTaskbar": false,
+        "title": "File Sortify",
+        "width": 900
+      }
+    ],
+    "withGlobalTauri": true
+  },
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "frontendDist": "../src"
+  },
+  "bundle": {
+    "active": true,
+    "category": "Utility",
+    "icon": [
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/32x32.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "longDescription": "一个智能的文件自动分类工具，可以根据文件类型自动整理下载文件夹中的文件。支持自定义分类规则，实时监控文件变化。",
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13"
+    },
+    "shortDescription": "Sortify Your Files, Automatically!",
+    "targets": "all"
+  },
+  "identifier": "com.fileSortify.tool",
+  "productName": "File Sortify",
+  "version": "1.0.0"
+}

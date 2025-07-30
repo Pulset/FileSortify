@@ -1,0 +1,51 @@
+{
+  "name": "FileSortify",
+  "version": "1.0.0",
+  "description": "智能文件自动分类工具 - Mac客户端",
+  "main": "src/index.html",
+  "scripts": {
+    "dev": "cargo tauri dev",
+    "build": "cargo tauri build",
+    "build-debug": "cargo tauri build --debug",
+    "build-windows": "cargo tauri build --target x86_64-pc-windows-msvc",
+    "build-mac": "cargo tauri build --target x86_64-apple-darwin",
+    "build-mac-arm": "cargo tauri build --target aarch64-apple-darwin",
+    "build-linux": "cargo tauri build --target x86_64-unknown-linux-gnu",
+    "setup-apple": "./scripts/setup-apple-subscription.sh",
+    "test-subscription": "cargo tauri dev --features subscription-test",
+    "eslint": "eslint \"**/*.{js,cjs,ts,mjs,jsx,tsx}\"",
+    "lint": "npm run eslint",
+    "lintfix": "npm run eslint -- --fix",
+    "postlint": "template-oss-check",
+    "template-oss-apply": "template-oss-apply --force",
+    "snap": "tap",
+    "test": "tap",
+    "posttest": "npm run lint"
+  },
+  "keywords": [
+    "FileSortify",
+    "file-organizer",
+    "mac",
+    "tauri",
+    "file-management"
+  ],
+  "author": "GitHub Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.0.0"
+  },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
+  "templateOSS": {
+    "//@npmcli/template-oss": "This file is partially managed by @npmcli/template-oss. Edits may be overwritten.",
+    "version": "4.24.3"
+  },
+  "tap": {
+    "nyc-arg": [
+      "--exclude",
+      "tap-snapshots/**"
+    ]
+  }
+}
