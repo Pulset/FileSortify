@@ -121,21 +121,34 @@ body {
 .main-content {
   flex: 1;
   background: #ffffff;
-  overflow-y: auto;
   position: relative;
+  overflow: hidden;
+  /* 防止滚动条闪现 */
+  scrollbar-gutter: stable;
 }
 
 /* 视图容器 */
 .view {
-  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   padding: 24px 32px;
   max-width: 900px;
   margin: 0 auto;
   min-height: calc(100vh - 40px);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  pointer-events: none;
+  overflow-y: auto;
 }
 
 .view.active {
-  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .view-header {
@@ -430,10 +443,6 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.view {
-  animation: fadeIn 0.3s ease-out;
 }
 
 /* 焦点样式 */
