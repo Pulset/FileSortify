@@ -153,7 +153,15 @@ export class TauriAPI {
             console.warn('Monitoring not available in web mode');
             return false;
         }
-        return this.invoke('toggle_monitoring', { folderPath });
+        console.log('Calling toggle_monitoring with folderPath:', folderPath);
+        try {
+            const result = await this.invoke('toggle_monitoring', { folderPath });
+            console.log('toggle_monitoring result:', result);
+            return result;
+        } catch (error) {
+            console.error('toggle_monitoring error:', error);
+            throw error;
+        }
     }
 
     async getSubscriptionStatus(): Promise<SubscriptionStatus> {

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Config } from '../types';
 import { tauriAPI } from '../utils/tauri';
 import { DEFAULT_CONFIG } from '../utils/defaultConfig';
-import { useLogger } from './useLogger';
+import { useLogger } from '../contexts/LoggerContext';
 
 export const useConfig = () => {
     const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);

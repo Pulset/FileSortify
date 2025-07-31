@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ViewType } from './types';
 import { tauriAPI } from './utils/tauri';
-import { useLogger } from './hooks/useLogger';
+import { useLogger } from './contexts/LoggerContext';
 import { useConfig } from './hooks/useConfig';
 import { useStats } from './hooks/useStats';
 
@@ -24,15 +24,14 @@ function App() {
   const { stats, updateFilesOrganized, setMonitoring } = useStats();
 
   useEffect(() => {
-    addLog('start');
     const initializeApp = async () => {
       const initialized = await tauriAPI.initialize();
-      addLog(`111,${initialized}`);
       setTauriInitialized(initialized);
 
       if (initialized) {
         try {
           const canUse = await tauriAPI.canUseApp();
+
           if (canUse) {
             addLog('✅ 应用已启动', 'success');
           } else {
@@ -54,6 +53,11 @@ function App() {
 
           tauriAPI.listen('toggle-monitoring', () => {
             handleToggleMonitoring();
+          });
+
+          // 监听文件整理事件来更新统计数据
+          tauriAPI.listen('file-organized', (event: { payload: { file_name: string, category: string, timestamp: string } }) => {
+            updateFilesOrganized(1);
           });
 
           // 现在加载配置
@@ -100,29 +104,41 @@ function App() {
   };
 
   const handleToggleMonitoring = async () => {
+    console.log('handleToggleMonitoring called, folderPath:', folderPath);
+
     if (!folderPath.trim()) {
       alert('请先选择文件夹');
+      addLog('❌ 请先选择文件夹', 'error');
       return;
     }
 
     try {
+      addLog('🔄 正在检查订阅状态...', 'info');
+
       // 检查订阅状态
       const canUse = await tauriAPI.canUseApp();
+      console.log('canUse result:', canUse);
+
       if (!canUse) {
         alert('文件监控功能需要有效订阅。请先订阅后再使用。');
+        addLog('❌ 文件监控功能需要有效订阅', 'error');
         return;
       }
 
+      addLog('🔄 正在切换监控状态...', 'info');
       const result = await tauriAPI.toggleMonitoring(folderPath);
+      console.log('toggleMonitoring result:', result);
+
       setIsMonitoring(result);
       setMonitoring(result);
 
       if (result) {
-        addLog('🔍 开始监控新文件...', 'info');
+        addLog('🔍 开始监控新文件...', 'success');
       } else {
         addLog('⏹️ 已停止监控', 'info');
       }
     } catch (error) {
+      console.error('handleToggleMonitoring error:', error);
       addLog(`❌ 切换监控失败: ${error}`, 'error');
       alert(`操作失败: ${error}`);
     }

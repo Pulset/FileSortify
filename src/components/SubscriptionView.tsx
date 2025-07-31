@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SubscriptionStatus } from '../types';
 import { tauriAPI } from '../utils/tauri';
-import { useLogger } from '../hooks/useLogger';
+import { useLogger } from '../contexts/LoggerContext';
 
 const SubscriptionView: React.FC = () => {
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
@@ -30,12 +30,12 @@ const SubscriptionView: React.FC = () => {
     try {
       const products = await tauriAPI.getAppleProducts();
       const productId = plan === 'monthly' ? products.monthly.product_id : products.yearly.product_id;
-      
+
       addLog(`🛒 启动Apple订阅购买: ${productId}`, 'info');
-      
+
       const result = await tauriAPI.startApplePurchase(productId);
       addLog(`✅ ${result}`, 'success');
-      
+
       // 这里可以显示购买等待对话框
       alert(`正在处理${plan === 'monthly' ? '月度' : '年度'}订阅购买，请在App Store对话框中完成购买。`);
     } catch (error) {
@@ -49,7 +49,7 @@ const SubscriptionView: React.FC = () => {
       addLog('🔄 恢复Apple购买...', 'info');
       const result = await tauriAPI.restoreApplePurchases();
       addLog(`✅ ${result}`, 'success');
-      
+
       // 重新加载订阅状态
       setTimeout(() => {
         loadSubscriptionStatus();
@@ -66,7 +66,7 @@ const SubscriptionView: React.FC = () => {
     }
 
     if (subscription.status === 'Trial') {
-      const daysRemaining = subscription.trial_start_date 
+      const daysRemaining = subscription.trial_start_date
         ? Math.max(0, Math.floor((new Date(subscription.trial_start_date).getTime() + 3 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
         : 0;
 
@@ -76,13 +76,13 @@ const SubscriptionView: React.FC = () => {
             <div className="subscription-status">🎁 试用期</div>
             <div className="subscription-details">剩余 {daysRemaining} 天试用时间</div>
           </div>
-          
+
           {daysRemaining <= 1 && (
             <div className="trial-warning">
               ⚠️ 试用期即将结束，请及时订阅以继续使用所有功能
             </div>
           )}
-          
+
           {renderPricingPlans()}
         </>
       );
@@ -137,7 +137,7 @@ const SubscriptionView: React.FC = () => {
           通过App Store订阅
         </button>
       </div>
-      
+
       <div className="pricing-card recommended">
         <div className="plan-name">年度订阅</div>
         <div className="plan-price">$19.99</div>
@@ -191,7 +191,7 @@ const SubscriptionView: React.FC = () => {
 
       <div className="subscription-section">
         {renderSubscriptionContent()}
-        
+
         <div className="restore-purchases">
           <button className="btn secondary" onClick={handleRestorePurchases}>
             恢复购买

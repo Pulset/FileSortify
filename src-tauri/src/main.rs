@@ -28,6 +28,7 @@ struct AppState {
 async fn organize_files(
     folder_path: String,
     state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
     // 检查订阅状态
     {
@@ -40,7 +41,8 @@ async fn organize_files(
     let mut organizer_guard = state.organizer.lock().unwrap();
     
     match fileSortify::new(&folder_path) {
-        Ok(mut organizer) => {
+        Ok(organizer) => {
+            let mut organizer = organizer.with_app_handle(app_handle);
             match organizer.organize_existing_files() {
                 Ok(count) => {
                     *organizer_guard = Some(organizer);
@@ -89,7 +91,8 @@ async fn toggle_monitoring(
     } else {
         // 开始监控
         match fileSortify::new(&folder_path) {
-            Ok(mut organizer) => {
+            Ok(organizer) => {
+                let mut organizer = organizer.with_app_handle(app_handle.clone());
                 match organizer.start_monitoring() {
                     Ok(_) => {
                         *organizer_guard = Some(organizer);
