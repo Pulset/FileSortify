@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "identifier": "default",
+  "description": "Default permissions for the application",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "notification:default",
+    "dialog:default",
+    "fs:default",
+    "shell:default",
+    "opener:default"
+  ]
+}

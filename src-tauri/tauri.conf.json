@@ -2,7 +2,8 @@
   "$schema": "https://schema.tauri.app/config/2.0.0",
   "app": {
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": ["default"]
     },
     "windows": [
       {
@@ -19,12 +20,13 @@
         "width": 900
       }
     ],
-    "withGlobalTauri": true
+    "withGlobalTauri": false
   },
   "build": {
-    "beforeBuildCommand": "",
-    "beforeDevCommand": "",
-    "frontendDist": "../src"
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
   },
   "bundle": {
     "active": true,

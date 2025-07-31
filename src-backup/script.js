@@ -52,6 +52,23 @@ async function waitForTauri() {
     });
 }
 
+// 默认分类规则配置
+const DEFAULT_CONFIG = {
+    categories: {
+        "图片": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff", ".raw", ".heic"],
+        "视频": [".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".ts", ".mts"],
+        "音频": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a", ".opus", ".aiff"],
+        "文档": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".pages", ".epub", ".mobi"],
+        "表格": [".xls", ".xlsx", ".csv", ".ods", ".numbers"],
+        "演示文稿": [".ppt", ".pptx", ".odp", ".key"],
+        "压缩包": [".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".dmg", ".iso"],
+        "程序": [".exe", ".msi", ".app", ".deb", ".rpm", ".pkg", ".dmg", ".appimage"],
+        "代码": [".js", ".html", ".css", ".py", ".java", ".cpp", ".c", ".php", ".rb", ".go", ".rs", ".swift", ".kt"],
+        "字体": [".ttf", ".otf", ".woff", ".woff2", ".eot"],
+        "其他": []
+    }
+};
+
 // 全局状态
 let isMonitoring = false;
 let currentConfig = null;
@@ -62,28 +79,7 @@ let stats = {
     monitoringSince: null,
 };
 
-// 初始化应用
-document.addEventListener('DOMContentLoaded', async () => {
-    // 等待Tauri API初始化
-    await waitForTauri();
 
-    if (!invoke) {
-        addLog('❌ Tauri API初始化失败');
-        return;
-    }
-
-    await loadSubscriptionStatus();
-    await loadConfig();
-    await loadDefaultFolder();
-    setupEventListeners();
-
-    const canUse = await invoke('can_use_app');
-    if (canUse) {
-        addLog('✅ 应用已启动');
-    } else {
-        addLog('⚠️ 试用期已结束，请订阅后继续使用');
-    }
-});
 
 // 设置事件监听器
 function setupEventListeners() {
@@ -213,14 +209,21 @@ async function toggleMonitoring() {
 // 加载配置
 async function loadConfig() {
     if (!invoke) {
-        console.log('Tauri API未初始化，跳过加载配置');
+        console.log('Tauri API未初始化，使用默认配置');
+        currentConfig = DEFAULT_CONFIG;
         return;
     }
 
     try {
         currentConfig = await invoke('get_config');
+        // 如果后端返回的配置为空或不完整，使用默认配置
+        if (!currentConfig || !currentConfig.categories) {
+            currentConfig = DEFAULT_CONFIG;
+            addLog('使用默认分类规则');
+        }
     } catch (error) {
-        addLog(`❌ 加载配置失败: ${error}`);
+        addLog(`❌ 加载配置失败，使用默认配置: ${error}`);
+        currentConfig = DEFAULT_CONFIG;
     }
 }
 
@@ -238,29 +241,21 @@ async function saveConfig() {
 
 // 显示分类规则
 async function showCategories() {
-    const section = document.getElementById('categories-section');
+    if (!currentConfig) await loadConfig();
+
     const container = document.getElementById('categories');
+    container.innerHTML = '';
 
-    if (section.style.display === 'none') {
-        if (!currentConfig) await loadConfig();
-
-        container.innerHTML = '';
-        for (const [category, extensions] of Object.entries(
-            currentConfig.categories
-        )) {
-            if (extensions.length > 0) {
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                card.innerHTML = `
-                    <h4>${category}</h4>
-                    <div class="extensions">${extensions.join(', ')}</div>
-                `;
-                container.appendChild(card);
-            }
+    for (const [category, extensions] of Object.entries(currentConfig.categories)) {
+        if (extensions.length > 0) {
+            const card = document.createElement('div');
+            card.className = 'rule-card';
+            card.innerHTML = `
+                <div class="rule-card-header">${category}</div>
+                <div class="rule-extensions">${extensions.join(', ')}</div>
+            `;
+            container.appendChild(card);
         }
-        section.style.display = 'block';
-    } else {
-        section.style.display = 'none';
     }
 }
 
@@ -283,31 +278,44 @@ async function loadConfigCategories() {
     const container = document.getElementById('config-categories');
     container.innerHTML = '';
 
-    for (const [category, extensions] of Object.entries(
-        currentConfig.categories
-    )) {
+    for (const [category, extensions] of Object.entries(currentConfig.categories)) {
         if (category !== '其他') {
             const categoryDiv = document.createElement('div');
-            categoryDiv.className = 'config-category';
+            categoryDiv.className = 'rule-item';
 
             const extensionTags = extensions
-                .map(
-                    (ext) =>
-                        `<span class="extension-tag">${ext}<span class="remove-ext" onclick="removeExtension('${category}', '${ext}')">×</span></span>`
-                )
-                .join('');
+                .map(ext => `
+                    <span class="extension-tag">
+                        ${ext}
+                        <button class="remove-ext-btn" onclick="removeExtension('${category}', '${ext}')" title="删除">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                            </svg>
+                        </button>
+                    </span>
+                `).join('');
 
             categoryDiv.innerHTML = `
-                <h5>
-                    ${category}
-                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteCategory('${category}')">删除分类</button>
-                </h5>
-                <div style="margin-bottom: 10px;">
+                <div class="rule-item-header">
+                    <h4>${category}</h4>
+                    <button class="delete-category-btn" onclick="deleteCategory('${category}')" title="删除分类">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        </svg>
+                        删除分类
+                    </button>
+                </div>
+                <div class="extensions-list">
                     ${extensionTags}
                 </div>
-                <div class="add-extension">
-                    <input type="text" placeholder="添加扩展名 (如: .mp4)" id="ext-input-${category}">
-                    <button class="btn" onclick="addExtension('${category}')">添加</button>
+                <div class="add-extension-form">
+                    <input type="text" placeholder="添加扩展名 (如: .mp4)" id="ext-input-${category}" class="extension-input">
+                    <button class="add-extension-btn" onclick="addExtension('${category}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        添加
+                    </button>
                 </div>
             `;
 
@@ -328,11 +336,26 @@ async function addNewCategory() {
         return;
     }
 
-    const extensions = extensionsStr
-        ? extensionsStr.split(',').map((ext) => ext.trim())
-        : [];
-
     if (!currentConfig) await loadConfig();
+
+    // 检查分类名称是否已存在
+    if (currentConfig.categories[name]) {
+        alert('该分类名称已存在，请使用其他名称');
+        return;
+    }
+
+    // 处理扩展名
+    let extensions = [];
+    if (extensionsStr) {
+        extensions = extensionsStr.split(',').map(ext => {
+            ext = ext.trim();
+            // 确保扩展名以点开头
+            if (ext && !ext.startsWith('.')) {
+                ext = '.' + ext;
+            }
+            return ext;
+        }).filter(ext => ext.length > 1); // 过滤掉空的或只有点的扩展名
+    }
 
     currentConfig.categories[name] = extensions;
     await saveConfig();
@@ -341,7 +364,8 @@ async function addNewCategory() {
     document.getElementById('new-category-extensions').value = '';
 
     await loadConfigCategories();
-    addLog(`✅ 成功添加分类: ${name}`);
+    await showCategories(); // 同时更新查看规则页面
+    addLog(`✅ 成功添加分类: ${name}，包含 ${extensions.length} 个扩展名`);
 }
 
 // 删除分类
@@ -356,6 +380,7 @@ async function deleteCategory(categoryName) {
     await saveConfig();
 
     await loadConfigCategories();
+    await showCategories(); // 同时更新查看规则页面
     addLog(`✅ 成功删除分类: ${categoryName}`);
 }
 
@@ -373,12 +398,19 @@ async function addExtension(categoryName) {
 
     const normalizedExt = extension.startsWith('.') ? extension : `.${extension}`;
 
+    // 验证扩展名格式
+    if (normalizedExt.length < 2 || !/^\.[\w]+$/.test(normalizedExt)) {
+        alert('请输入有效的扩展名格式 (如: .mp4)');
+        return;
+    }
+
     if (!currentConfig.categories[categoryName].includes(normalizedExt)) {
         currentConfig.categories[categoryName].push(normalizedExt);
         await saveConfig();
 
         input.value = '';
         await loadConfigCategories();
+        await showCategories(); // 同时更新查看规则页面
         addLog(`✅ 向分类 ${categoryName} 添加扩展名: ${normalizedExt}`);
     } else {
         alert('该扩展名已存在');
@@ -395,6 +427,7 @@ async function removeExtension(categoryName, extension) {
         await saveConfig();
 
         await loadConfigCategories();
+        await showCategories(); // 同时更新查看规则页面
         addLog(`✅ 从分类 ${categoryName} 移除扩展名: ${extension}`);
     }
 }
@@ -447,11 +480,12 @@ async function resetConfig() {
         return;
     }
 
-    // 重新加载默认配置
-    currentConfig = null;
-    await loadConfig();
+    // 使用默认配置
+    currentConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    await saveConfig();
 
     await loadConfigCategories();
+    await showCategories(); // 同时更新查看规则页面
     addLog('✅ 已重置为默认配置');
 }
 
@@ -740,15 +774,63 @@ function updateStats() {
         ? '监控中'
         : '已停止';
 }
+// 导航系统
+function initializeNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const views = document.querySelectorAll('.view');
 
-// 添加日志
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const targetView = item.dataset.view;
+
+            // 更新导航状态
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+
+            // 切换视图
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById(`${targetView}-view`).classList.add('active');
+        });
+    });
+}
+
+// 标签页系统
+function initializeTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.dataset.tab;
+
+            // 更新标签状态
+            tabBtns.forEach(tab => tab.classList.remove('active'));
+            btn.classList.add('active');
+
+            // 切换面板
+            tabPanels.forEach(panel => panel.classList.remove('active'));
+            document.getElementById(targetTab).classList.add('active');
+        });
+    });
+}
+
+// 清空日志
+function clearLogs() {
+    const logs = document.getElementById('logs');
+    logs.innerHTML = '<div class="log-entry"><span class="log-time">[清空]</span><span class="log-message">日志已清空</span></div>';
+}
+
+// 更新日志格式
 function addLog(message) {
     const logs = document.getElementById('logs');
     const entry = document.createElement('div');
     entry.className = 'log-entry';
 
     const timestamp = new Date().toLocaleTimeString();
-    entry.textContent = `[${timestamp}] ${message}`;
+    entry.innerHTML = `
+        <span class="log-time">[${timestamp}]</span>
+        <span class="log-message">${message}</span>
+    `;
 
     logs.appendChild(entry);
     logs.scrollTop = logs.scrollHeight;
@@ -757,4 +839,80 @@ function addLog(message) {
     while (logs.children.length > 100) {
         logs.removeChild(logs.firstChild);
     }
+}
+
+// 在DOMContentLoaded事件中初始化导航
+document.addEventListener('DOMContentLoaded', async () => {
+    // 初始化导航和标签页
+    initializeNavigation();
+    initializeTabs();
+
+    // 等待Tauri API初始化
+    await waitForTauri();
+
+    if (!invoke) {
+        addLog('Tauri API初始化失败');
+        // 即使API初始化失败，也要加载默认配置
+        currentConfig = DEFAULT_CONFIG;
+    } else {
+        await loadSubscriptionStatus();
+        const canUse = await invoke('can_use_app');
+        if (canUse) {
+            addLog('应用已启动');
+        } else {
+            addLog('试用期已结束，请订阅后继续使用');
+        }
+    }
+
+    await loadConfig();
+    await loadDefaultFolder();
+
+    // 初始化显示分类规则
+    await showCategories();
+    await loadConfigCategories();
+
+    // 设置键盘事件
+    setupKeyboardEvents();
+
+    // 显示配置统计
+    showCategoryStats();
+
+    if (invoke) {
+        setupEventListeners();
+    }
+});
+
+// 添加键盘事件支持
+function setupKeyboardEvents() {
+    // 为新分类表单添加回车键支持
+    document.getElementById('new-category-name')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('new-category-extensions').focus();
+        }
+    });
+
+    document.getElementById('new-category-extensions')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addNewCategory();
+        }
+    });
+
+    // 为扩展名输入框添加回车键支持
+    document.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && e.target.classList.contains('extension-input')) {
+            const categoryName = e.target.id.replace('ext-input-', '');
+            addExtension(categoryName);
+        }
+    });
+}
+
+// 显示分类规则统计信息
+function showCategoryStats() {
+    if (!currentConfig) return;
+
+    const totalCategories = Object.keys(currentConfig.categories).length - 1; // 排除"其他"分类
+    const totalExtensions = Object.values(currentConfig.categories)
+        .reduce((total, extensions) => total + extensions.length, 0);
+
+    addLog(`📊 当前配置: ${totalCategories} 个分类，${totalExtensions} 个文件扩展名`);
 }

@@ -4,8 +4,11 @@
   "description": "智能文件自动分类工具 - Mac客户端",
   "main": "src/index.html",
   "scripts": {
-    "dev": "cargo tauri dev",
-    "build": "cargo tauri build",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri:dev": "cargo tauri dev",
+    "tauri:build": "cargo tauri build",
     "build-debug": "cargo tauri build --debug",
     "build-windows": "cargo tauri build --target x86_64-pc-windows-msvc",
     "build-mac": "cargo tauri build --target x86_64-apple-darwin",
@@ -31,8 +34,18 @@
   ],
   "author": "GitHub Inc.",
   "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@tauri-apps/api": "^2.7.0"
+  },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.0.0"
+    "@tauri-apps/cli": "^2.7.1",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8"
   },
   "files": [
     "bin/",
