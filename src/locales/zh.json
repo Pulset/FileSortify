@@ -1,0 +1,162 @@
+{
+  "nav": {
+    "dashboard": "概览",
+    "organize": "文件整理",
+    "rules": "分类规则",
+    "logs": "活动日志",
+    "subscription": "订阅"
+  },
+  "dashboard": {
+    "title": "概览",
+    "description": "文件整理状态和快速操作",
+    "stats": {
+      "filesOrganized": "已整理文件",
+      "lastOrganized": "最后整理时间",
+      "monitoringStatus": "监控状态",
+      "monitoring": "监控中",
+      "stopped": "已停止",
+      "notStarted": "未开始"
+    },
+    "actions": {
+      "quickActions": "快速操作",
+      "organizeFiles": "整理文件",
+      "organizeFilesDesc": "整理现有文件",
+      "toggleMonitoring": "切换监控",
+      "startMonitoring": "开始监控",
+      "stopMonitoring": "停止监控",
+      "autoMonitorDesc": "自动监控新文件"
+    }
+  },
+  "organize": {
+    "title": "文件整理",
+    "description": "配置文件夹路径和整理选项",
+    "folderPath": "文件夹路径",
+    "selectFolder": "选择文件夹",
+    "folderPlaceholder": "请选择要整理的文件夹",
+    "startOrganizing": "开始整理文件",
+    "hint": "未匹配的文件将保持在原地，不会被移动"
+  },
+  "rules": {
+    "title": "分类规则",
+    "description": "管理文件分类规则和自定义配置",
+    "viewRules": "查看规则",
+    "manageRules": "管理规则",
+    "addNewCategory": "添加新分类",
+    "categoryName": "分类名称",
+    "extensions": "扩展名 (如: .mp4,.avi,.mov)",
+    "addCategory": "添加分类",
+    "existingCategories": "现有分类",
+    "deleteCategory": "删除分类",
+    "addExtension": "添加扩展名 (如: .mp4)",
+    "add": "添加",
+    "configActions": "配置操作",
+    "exportConfig": "导出配置",
+    "importConfig": "导入配置",
+    "resetDefault": "重置默认"
+  },
+  "logs": {
+    "title": "活动日志",
+    "description": "查看文件整理的详细记录",
+    "realTimeLogs": "实时日志",
+    "clearLogs": "清空日志"
+  },
+  "subscription": {
+    "title": "订阅",
+    "description": "管理您的订阅状态和计划",
+    "trialStatus": "试用期",
+    "activeStatus": "订阅激活",
+    "expiredStatus": "订阅已过期",
+    "daysRemaining": "剩余 {{days}} 天",
+    "trialRemaining": "剩余 {{days}} 天试用时间",
+    "trialWarning": "试用期即将结束，请及时订阅以继续使用所有功能",
+    "expiredWarning": "订阅已过期，部分功能将无法使用。请重新订阅以恢复完整功能。",
+    "monthlyPlan": "月度订阅",
+    "yearlyPlan": "年度订阅",
+    "monthlyPrice": "$1.99",
+    "yearlyPrice": "$19.99",
+    "monthlyPeriod": "每月",
+    "yearlyPeriod": "每年 (节省 $4.89)",
+    "subscribeViaAppStore": "通过App Store订阅",
+    "cancelSubscription": "取消订阅",
+    "restorePurchases": "恢复购买",
+    "restoreHint": "如果您之前已经购买过，点击此按钮恢复您的订阅",
+    "features": {
+      "unlimitedOrganization": "无限制文件整理",
+      "realTimeMonitoring": "实时文件监控",
+      "customRules": "自定义分类规则",
+      "techSupport": "技术支持",
+      "prioritySupport": "优先技术支持",
+      "earlyAccess": "未来功能抢先体验"
+    }
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "close": "关闭",
+    "ok": "确定",
+    "yes": "是",
+    "no": "否"
+  },
+  "messages": {
+    "appStarted": "应用已启动",
+    "appInitializing": "正在初始化应用...",
+    "trialExpired": "试用期已过期",
+    "initializationFailed": "初始化失败",
+    "organizingFiles": "正在整理文件...",
+    "organizationComplete": "文件整理完成",
+    "monitoringStarted": "监控已启动",
+    "monitoringStopped": "监控已停止",
+    "folderSelected": "文件夹已选择",
+    "folderSelectionCancelled": "文件夹选择已取消",
+    "subscriptionRequired": "需要订阅",
+    "logsCleared": "日志已清空",
+    "loadingSubscriptionFailed": "加载订阅状态失败",
+    "subscriptionLoadFailed": "加载订阅信息失败",
+    "monthlySubscription": "月度",
+    "yearlySubscription": "年度"
+  },
+  "errors": {
+    "selectFolderFirst": "请先选择文件夹",
+    "organizationFailed": "文件整理失败",
+    "monitoringToggleFailed": "切换监控失败",
+    "folderSelectionFailed": "文件夹选择失败",
+    "subscriptionCheckFailed": "订阅状态检查失败",
+    "categoryNameRequired": "请输入分类名称",
+    "addCategoryFailed": "添加分类失败",
+    "deleteCategoryFailed": "删除分类失败",
+    "extensionRequired": "请输入扩展名",
+    "addExtensionFailed": "添加扩展名失败",
+    "removeExtensionFailed": "删除扩展名失败",
+    "importConfigFailed": "导入配置失败",
+    "resetConfigFailed": "重置配置失败",
+    "subscriptionStartFailed": "启动订阅失败",
+    "restorePurchasesFailed": "恢复购买失败",
+    "cancelSubscriptionFailed": "取消订阅失败"
+  },
+  "alerts": {
+    "deleteCategoryConfirm": "确定要删除分类 \"{{category}}\" 吗？",
+    "resetConfigConfirm": "确定要重置为默认配置吗？这将删除所有自定义分类规则。",
+    "cancelSubscriptionConfirm": "确定要取消订阅吗？取消后将在当前订阅期结束后停止服务。",
+    "purchaseProcessing": "正在处理{{plan}}订阅购买，请在App Store对话框中完成购买。"
+  },
+  "categories": {
+    "图片": "图片",
+    "视频": "视频", 
+    "音频": "音频",
+    "文档": "文档",
+    "表格": "表格",
+    "演示文稿": "演示文稿",
+    "压缩包": "压缩包",
+    "程序": "程序",
+    "代码": "代码",
+    "字体": "字体",
+    "其他": "其他"
+  }
+}

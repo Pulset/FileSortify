@@ -1,0 +1,162 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "organize": "Organize",
+    "rules": "Rules",
+    "logs": "Logs",
+    "subscription": "Subscription"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "File organization status and quick actions",
+    "stats": {
+      "filesOrganized": "Files Organized",
+      "lastOrganized": "Last Organized",
+      "monitoringStatus": "Monitoring Status",
+      "monitoring": "Monitoring",
+      "stopped": "Stopped",
+      "notStarted": "Not Started"
+    },
+    "actions": {
+      "quickActions": "Quick Actions",
+      "organizeFiles": "Organize Files",
+      "organizeFilesDesc": "Organize existing files",
+      "toggleMonitoring": "Toggle Monitoring",
+      "startMonitoring": "Start Monitoring",
+      "stopMonitoring": "Stop Monitoring",
+      "autoMonitorDesc": "Auto-monitor new files"
+    }
+  },
+  "organize": {
+    "title": "File Organization",
+    "description": "Configure folder paths and organization options",
+    "folderPath": "Folder Path",
+    "selectFolder": "Select Folder",
+    "folderPlaceholder": "Please select a folder to organize",
+    "startOrganizing": "Start Organizing Files",
+    "hint": "Unmatched files will remain in place and won't be moved"
+  },
+  "rules": {
+    "title": "Classification Rules",
+    "description": "Manage file classification rules and custom configurations",
+    "viewRules": "View Rules",
+    "manageRules": "Manage Rules",
+    "addNewCategory": "Add New Category",
+    "categoryName": "Category Name",
+    "extensions": "Extensions (e.g: .mp4,.avi,.mov)",
+    "addCategory": "Add Category",
+    "existingCategories": "Existing Categories",
+    "deleteCategory": "Delete Category",
+    "addExtension": "Add extension (e.g: .mp4)",
+    "add": "Add",
+    "configActions": "Configuration Actions",
+    "exportConfig": "Export Config",
+    "importConfig": "Import Config",
+    "resetDefault": "Reset Default"
+  },
+  "logs": {
+    "title": "Activity Logs",
+    "description": "View detailed records of file organization",
+    "realTimeLogs": "Real-time Logs",
+    "clearLogs": "Clear Logs"
+  },
+  "subscription": {
+    "title": "Subscription",
+    "description": "Manage your subscription status and plans",
+    "trialStatus": "Trial Period",
+    "activeStatus": "Subscription Active",
+    "expiredStatus": "Subscription Expired",
+    "daysRemaining": "{{days}} days remaining",
+    "trialRemaining": "{{days}} days of trial remaining",
+    "trialWarning": "Trial period is about to end, please subscribe in time to continue using all features",
+    "expiredWarning": "Subscription has expired, some features will be unavailable. Please resubscribe to restore full functionality.",
+    "monthlyPlan": "Monthly Subscription",
+    "yearlyPlan": "Yearly Subscription",
+    "monthlyPrice": "$1.99",
+    "yearlyPrice": "$19.99",
+    "monthlyPeriod": "per month",
+    "yearlyPeriod": "per year (Save $4.89)",
+    "subscribeViaAppStore": "Subscribe via App Store",
+    "cancelSubscription": "Cancel Subscription",
+    "restorePurchases": "Restore Purchases",
+    "restoreHint": "If you have purchased before, click this button to restore your subscription",
+    "features": {
+      "unlimitedOrganization": "Unlimited file organization",
+      "realTimeMonitoring": "Real-time file monitoring",
+      "customRules": "Custom classification rules",
+      "techSupport": "Technical support",
+      "prioritySupport": "Priority technical support",
+      "earlyAccess": "Early access to future features"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "messages": {
+    "appStarted": "Application started",
+    "appInitializing": "Initializing application...",
+    "trialExpired": "Trial period expired",
+    "initializationFailed": "Initialization failed",
+    "organizingFiles": "Organizing files...",
+    "organizationComplete": "File organization complete",
+    "monitoringStarted": "Monitoring started",
+    "monitoringStopped": "Monitoring stopped",
+    "folderSelected": "Folder selected",
+    "folderSelectionCancelled": "Folder selection cancelled",
+    "subscriptionRequired": "Subscription required",
+    "logsCleared": "Logs cleared",
+    "loadingSubscriptionFailed": "Failed to load subscription status",
+    "subscriptionLoadFailed": "Failed to load subscription information",
+    "monthlySubscription": "monthly",
+    "yearlySubscription": "yearly"
+  },
+  "errors": {
+    "selectFolderFirst": "Please select a folder first",
+    "organizationFailed": "File organization failed",
+    "monitoringToggleFailed": "Failed to toggle monitoring",
+    "folderSelectionFailed": "Folder selection failed",
+    "subscriptionCheckFailed": "Subscription status check failed",
+    "categoryNameRequired": "Please enter category name",
+    "addCategoryFailed": "Failed to add category",
+    "deleteCategoryFailed": "Failed to delete category",
+    "extensionRequired": "Please enter extension",
+    "addExtensionFailed": "Failed to add extension",
+    "removeExtensionFailed": "Failed to remove extension",
+    "importConfigFailed": "Failed to import configuration",
+    "resetConfigFailed": "Failed to reset configuration",
+    "subscriptionStartFailed": "Failed to start subscription",
+    "restorePurchasesFailed": "Failed to restore purchases",
+    "cancelSubscriptionFailed": "Failed to cancel subscription"
+  },
+  "alerts": {
+    "deleteCategoryConfirm": "Are you sure you want to delete category \"{{category}}\"?",
+    "resetConfigConfirm": "Are you sure you want to reset to default configuration? This will delete all custom classification rules.",
+    "cancelSubscriptionConfirm": "Are you sure you want to cancel subscription? Service will stop after the current subscription period ends.",
+    "purchaseProcessing": "Processing {{plan}} subscription purchase, please complete the purchase in the App Store dialog."
+  },
+  "categories": {
+    "图片": "Images",
+    "视频": "Videos",
+    "音频": "Audio",
+    "文档": "Documents",
+    "表格": "Spreadsheets",
+    "演示文稿": "Presentations",
+    "压缩包": "Archives",
+    "程序": "Applications",
+    "代码": "Code",
+    "字体": "Fonts",
+    "其他": "Others"
+  }
+}

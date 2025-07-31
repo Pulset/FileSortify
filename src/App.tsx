@@ -17,7 +17,6 @@ function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [folderPath, setFolderPath] = useState('');
-  const [tauriInitialized, setTauriInitialized] = useState(false);
 
   const { addLog } = useLogger();
   const { config, loading: configLoading, loadConfig } = useConfig();
@@ -26,7 +25,6 @@ function App() {
   useEffect(() => {
     const initializeApp = async () => {
       const initialized = await tauriAPI.initialize();
-      setTauriInitialized(initialized);
 
       if (initialized) {
         try {
@@ -56,9 +54,19 @@ function App() {
           });
 
           // 监听文件整理事件来更新统计数据
-          tauriAPI.listen('file-organized', (event: { payload: { file_name: string, category: string, timestamp: string } }) => {
-            updateFilesOrganized(1);
-          });
+          tauriAPI.listen(
+            'file-organized',
+            (event: {
+              payload: {
+                file_name: string;
+                category: string;
+                timestamp: string;
+              };
+            }) => {
+              console.log(event);
+              updateFilesOrganized(1);
+            }
+          );
 
           // 现在加载配置
           loadConfig();
