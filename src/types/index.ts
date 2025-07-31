@@ -34,8 +34,7 @@ export interface LogEntry {
 }
 
 export type ViewType = 'dashboard' | 'organize' | 'rules' | 'logs' | 'subscription';
-export type RulesTabType = 'view-rules' | 'manage-rules';// Ta
-uri window type declarations for Tauri 2.x
+export type RulesTabType = 'view-rules' | 'manage-rules';// Tauri window type declarations for Tauri 2.x
 declare global {
     interface Window {
         __TAURI_INTERNALS__?: any;
