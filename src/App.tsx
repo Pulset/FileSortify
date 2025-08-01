@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ViewType } from './types';
 import { tauriAPI } from './utils/tauri';
-import { useLogger } from './contexts/LoggerContext';
-import { useConfig } from './hooks/useConfig';
-import { useStats } from './hooks/useStats';
+import {
+  usePathsStore,
+  useConfigStore,
+  useLoggerStore,
+  useStatsStore,
+} from './stores';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -15,16 +18,23 @@ import SubscriptionView from './components/SubscriptionView';
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [folderPath, setFolderPath] = useState('');
 
-  const { addLog } = useLogger();
-  const { config, loading: configLoading, loadConfig } = useConfig();
-  const { stats, updateFilesOrganized, setMonitoring } = useStats();
+  // 使用模块化的store
+  const { addLog } = useLoggerStore();
+  const { config, loading: configLoading, loadConfig } = useConfigStore();
+  const { paths, loadPaths } = usePathsStore();
+  const { stats, updateStatsFromPaths } = useStatsStore();
+
+  const handleBatchOrganizeFiles = useCallback(async () => {
+    // 这个函数现在只是占位符，实际的批量操作在 OrganizeView 中处理
+    addLog('🔄 请在文件整理页面进行操作', 'info');
+  }, [addLog]);
 
   useEffect(() => {
     const initializeApp = async () => {
+      console.log('Starting app initialization...');
       const initialized = await tauriAPI.initialize();
+      console.log('Tauri initialized:', initialized);
 
       if (initialized) {
         try {
@@ -36,21 +46,17 @@ function App() {
             addLog('⚠️ 试用期已结束，请订阅后继续使用', 'warning');
           }
 
-          // 加载默认文件夹
-          try {
-            const defaultFolder = await tauriAPI.getDefaultDownloadsFolder();
-            setFolderPath(defaultFolder);
-          } catch (error) {
-            console.log('无法获取默认下载文件夹:', error);
-          }
+          // 初始化数据
+          await Promise.all([loadConfig(), loadPaths()]);
 
           // 设置事件监听器
           tauriAPI.listen('organize-files', () => {
-            handleOrganizeFiles();
+            handleBatchOrganizeFiles();
           });
 
           tauriAPI.listen('toggle-monitoring', () => {
-            handleToggleMonitoring();
+            // 这个事件现在由各个路径的监控状态处理
+            addLog(`📊 监控状态已更新`, 'info');
           });
 
           // 监听文件整理事件来更新统计数据
@@ -61,17 +67,18 @@ function App() {
                 file_name: string;
                 category: string;
                 timestamp: string;
+                folder_path?: string;
               };
             }) => {
-              console.log(event);
-              updateFilesOrganized(1);
+              console.log('File organized event:', event);
+              addLog(
+                `📁 文件已整理: ${event.payload.file_name} → ${event.payload.category}`,
+                'success'
+              );
             }
           );
-
-          // 现在加载配置
-          loadConfig();
         } catch (error) {
-          addLog(`❌ 初始化失败: ${error}`, 'error');
+          addLog(`❌ 初始化失败: ${error?.message}`, 'error');
         }
       } else {
         addLog('❌ Tauri API初始化失败', 'error');
@@ -79,93 +86,28 @@ function App() {
     };
 
     initializeApp();
-  }, []);
+  }, [addLog, handleBatchOrganizeFiles, loadConfig, loadPaths]);
 
+  // 当路径数据变化时，更新统计数据
+  useEffect(() => {
+    if (paths.length > 0) {
+      updateStatsFromPaths(paths);
+    }
+  }, [paths, updateStatsFromPaths]);
+
+  // 向后兼容的事件处理器（现在主要用于快捷键触发）
   const handleOrganizeFiles = async () => {
-    if (!folderPath.trim()) {
-      alert('请先选择文件夹');
-      return;
-    }
-
-    try {
-      // 检查订阅状态
-      const canUse = await tauriAPI.canUseApp();
-      if (!canUse) {
-        alert('文件整理功能需要有效订阅。请先订阅后再使用。');
-        return;
-      }
-
-      addLog('🔄 开始整理现有文件...', 'info');
-      const result = await tauriAPI.organizeFiles(folderPath);
-
-      const fileCount = parseInt(result.match(/\d+/)?.[0] || '0');
-      updateFilesOrganized(fileCount);
-
-      addLog(`✅ ${result}`, 'success');
-
-      // 发送通知
-      await tauriAPI.sendNotification('文件整理完成', result);
-    } catch (error) {
-      addLog(`❌ 整理失败: ${error}`, 'error');
-      alert(`整理失败: ${error}`);
-    }
+    await handleBatchOrganizeFiles();
   };
 
   const handleToggleMonitoring = async () => {
-    console.log('handleToggleMonitoring called, folderPath:', folderPath);
-
-    if (!folderPath.trim()) {
-      alert('请先选择文件夹');
-      addLog('❌ 请先选择文件夹', 'error');
-      return;
-    }
-
-    try {
-      addLog('🔄 正在检查订阅状态...', 'info');
-
-      // 检查订阅状态
-      const canUse = await tauriAPI.canUseApp();
-      console.log('canUse result:', canUse);
-
-      if (!canUse) {
-        alert('文件监控功能需要有效订阅。请先订阅后再使用。');
-        addLog('❌ 文件监控功能需要有效订阅', 'error');
-        return;
-      }
-
-      addLog('🔄 正在切换监控状态...', 'info');
-      const result = await tauriAPI.toggleMonitoring(folderPath);
-      console.log('toggleMonitoring result:', result);
-
-      setIsMonitoring(result);
-      setMonitoring(result);
-
-      if (result) {
-        addLog('🔍 开始监控新文件...', 'success');
-      } else {
-        addLog('⏹️ 已停止监控', 'info');
-      }
-    } catch (error) {
-      console.error('handleToggleMonitoring error:', error);
-      addLog(`❌ 切换监控失败: ${error}`, 'error');
-      alert(`操作失败: ${error}`);
-    }
-  };
-
-  const handleSelectFolder = async () => {
-    try {
-      addLog('📁 正在打开文件夹选择对话框...', 'info');
-      const folder = await tauriAPI.selectFolder();
-
-      if (folder) {
-        setFolderPath(folder);
-        addLog(`📁 已选择文件夹: ${folder}`, 'success');
-      } else {
-        addLog('📁 文件夹选择已取消', 'info');
-      }
-    } catch (error) {
-      addLog(`❌ 选择文件夹失败: ${error}`, 'error');
-    }
+    // 计算监控路径数量
+    const monitoringPathsCount = stats.pathStats
+      ? Object.values(stats.pathStats).filter(
+          (pathStat) => pathStat.monitoringSince !== null
+        ).length
+      : 0;
+    addLog(`📊 当前监控状态: ${monitoringPathsCount} 个路径正在监控`, 'info');
   };
 
   const renderCurrentView = () => {
@@ -174,22 +116,19 @@ function App() {
         return (
           <Dashboard
             stats={stats}
-            isMonitoring={isMonitoring}
+            isMonitoring={
+              stats.pathStats
+                ? Object.values(stats.pathStats).some(
+                    (pathStat) => pathStat.monitoringSince !== null
+                  )
+                : false
+            }
             onOrganizeFiles={handleOrganizeFiles}
             onToggleMonitoring={handleToggleMonitoring}
           />
         );
       case 'organize':
-        return (
-          <OrganizeView
-            folderPath={folderPath}
-            onFolderPathChange={setFolderPath}
-            onSelectFolder={handleSelectFolder}
-            onOrganizeFiles={handleOrganizeFiles}
-            onToggleMonitoring={handleToggleMonitoring}
-            isMonitoring={isMonitoring}
-          />
-        );
+        return <OrganizeView />;
       case 'rules':
         return <RulesView config={config} loading={configLoading} />;
       case 'logs':

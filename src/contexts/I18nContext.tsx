@@ -69,7 +69,7 @@ async function loadTranslation(
         throw new Error(`Unsupported language: ${language}`);
     }
   } catch (error) {
-    console.error(`Error loading ${language} translations:`, error);
+    console.error(`Error loading ${language} translations:`, error?.message);
     // Return empty object as fallback
     return {};
   }
@@ -92,7 +92,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
       const translationData = await loadTranslation(lang);
       translations[lang] = translationData;
     } catch (error) {
-      console.error(`Failed to load translations for ${lang}:`, error);
+      console.error(`Failed to load translations for ${lang}:`, error?.message);
       // Keep existing translations or empty object
     } finally {
       setIsLoading(false);
@@ -142,7 +142,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
       setLanguageState(lang);
       localStorage.setItem('fileSortify_language', lang);
     } catch (error) {
-      console.error(`Failed to switch to language ${lang}:`, error);
+      console.error(`Failed to switch to language ${lang}:`, error?.message);
     } finally {
       setIsLoading(false);
     }
