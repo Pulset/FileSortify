@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::State;
+use tauri::{State, Manager, WindowEvent, RunEvent};
 use std::sync::Mutex;
 
 mod file_organizer;
@@ -414,6 +414,95 @@ async fn get_local_receipt_data() -> Result<String, String> {
     }
 }
 
+// Tauri命令：显示主窗口
+#[tauri::command]
+async fn show_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+        Ok(())
+    } else {
+        Err("找不到主窗口".to_string())
+    }
+}
+
+// Tauri命令：隐藏主窗口
+#[tauri::command]
+async fn hide_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app_handle.get_webview_window("main") {
+        let _ = window.hide();
+        Ok(())
+    } else {
+        Err("找不到主窗口".to_string())
+    }
+}
+
+// 设置系统托盘
+fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::{
+        menu::{Menu, MenuItem, PredefinedMenuItem},
+        tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    };
+    
+    // 创建托盘菜单
+    let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
+    let hide_item = MenuItem::with_id(app, "hide", "隐藏窗口", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+    
+    let menu = Menu::with_items(app, &[&show_item, &hide_item, &separator, &quit_item])?;
+    
+    // 创建系统托盘图标
+    let _tray = TrayIconBuilder::with_id("main-tray")
+        .menu(&menu)
+        .tooltip("File Sortify")
+        .icon(app.default_window_icon().unwrap().clone())
+        .on_tray_icon_event(|tray, event| {
+            let app_handle = tray.app_handle();
+            
+            match event {
+                TrayIconEvent::Click {
+                    button: MouseButton::Left,
+                    button_state: MouseButtonState::Up,
+                    ..
+                } => {
+                    // 左键点击显示/隐藏窗口
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        if window.is_visible().unwrap_or(false) {
+                            let _ = window.hide();
+                        } else {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                }
+                _ => {}
+            }
+        })
+        .on_menu_event(|app_handle, event| {
+            match event.id().as_ref() {
+                "show" => {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+                "hide" => {
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.hide();
+                    }
+                }
+                "quit" => {
+                    app_handle.exit(0);
+                }
+                _ => {}
+            }
+        })
+        .build(app)?;
+    
+    Ok(())
+}
+
 fn main() {
     // 初始化订阅状态
     let subscription = Subscription::load().unwrap_or_default();
@@ -447,8 +536,55 @@ fn main() {
             get_apple_products,
             start_apple_purchase,
             restore_apple_purchases,
-            get_local_receipt_data
+            get_local_receipt_data,
+            show_main_window,
+            hide_main_window
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .setup(|app| {
+            // 设置系统托盘
+            setup_system_tray(app)?;
+            
+            // 设置窗口事件处理
+            let window = app.get_webview_window("main").unwrap();
+            let app_handle = app.handle().clone();
+            
+            window.on_window_event(move |event| {
+                match event {
+                    WindowEvent::CloseRequested { api, .. } => {
+                        // 阻止默认的关闭行为
+                        api.prevent_close();
+                        
+                        // 隐藏窗口到系统托盘
+                        let window = app_handle.get_webview_window("main").unwrap();
+                        let _ = window.hide();
+                        
+                        // 显示通知
+                        let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
+                            .builder()
+                            .title("File Sortify")
+                            .body("应用已最小化到系统托盘")
+                            .show();
+                    }
+                    _ => {}
+                }
+            });
+            
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            match event {
+                RunEvent::Reopen { has_visible_windows, .. } => {
+                    // 当点击 Dock 图标时触发（macOS 特有）
+                    if !has_visible_windows {
+                        if let Some(window) = app_handle.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                }
+                _ => {}
+            }
+        });
 }
