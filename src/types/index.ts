@@ -62,7 +62,8 @@ export type ViewType =
   | 'organize'
   | 'rules'
   | 'logs'
-  | 'subscription';
+  | 'subscription'
+  | 'settings';
 export type RulesTabType = 'view-rules' | 'manage-rules'; // Tauri window type declarations for Tauri 2.x
 declare global {
   interface Window {

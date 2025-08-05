@@ -1,0 +1,113 @@
+name: 'Build and Release'
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+jobs:
+  build-and-release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Generate update JSON
+        run: |
+          node scripts/generate-update-json.js ${{ github.ref_name }} "FileSortify ${{ github.ref_name }} 版本发布"
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'FileSortify ${{ github.ref_name }}'
+          releaseBody: 'See the assets to download and install this version.'
+          releaseDraft: true
+          prerelease: false
+          includeDebug: false
+          includeRelease: true
+
+  sign-and-notarize-macos:
+    if: contains(github.ref, 'refs/tags/')
+    needs: build-and-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: macos-latest
+          path: ./artifacts
+
+      - name: Import Code-Signing Certificates
+        if: matrix.platform == 'macos-latest'
+        uses: Apple-Actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: Sign and Notarize
+        if: matrix.platform == 'macos-latest'
+        run: |
+          # Sign the .app bundle
+          codesign --force --options runtime --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" --deep ./artifacts/*.app
+
+          # Create DMG
+          hdiutil create -volname "FileSortify" -srcfolder ./artifacts/*.app -ov -format UDZO FileSortify.dmg
+
+          # Sign DMG
+          codesign --force --sign "${{ secrets.APPLE_SIGNING_IDENTITY }}" FileSortify.dmg
+
+          # Notarize
+          xcrun notarytool submit FileSortify.dmg --apple-id "${{ secrets.APPLE_ID }}" --password "${{ secrets.APPLE_APP_PASSWORD }}" --team-id "${{ secrets.APPLE_TEAM_ID }}" --wait
+
+          # Staple
+          xcrun stapler staple FileSortify.dmg
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-signed
+          path: FileSortify.dmg

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ViewType } from './types';
 import { tauriAPI } from './utils/tauri';
+import { listen } from '@tauri-apps/api/event';
 import {
   usePathsStore,
   useConfigStore,
@@ -15,9 +16,12 @@ import OrganizeView from './components/OrganizeView';
 import RulesView from './components/RulesView';
 import LogsView from './components/LogsView';
 import SubscriptionView from './components/SubscriptionView';
+import SettingsView from './components/SettingsView';
+import { UpdateDialog } from './components/UpdateDialog';
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
 
   // 使用模块化的store
   const { addLog } = useLoggerStore();
@@ -77,6 +81,13 @@ function App() {
               );
             }
           );
+
+          // 监听更新相关事件
+          listen('update-available', (event: any) => {
+            addLog('🔄 发现新版本可用', 'info');
+            setShowUpdateDialog(true);
+          });
+
         } catch (error) {
           addLog(`❌ 初始化失败: ${error?.message}`, 'error');
         }
@@ -135,6 +146,8 @@ function App() {
         return <LogsView />;
       case 'subscription':
         return <SubscriptionView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return null;
     }
@@ -146,6 +159,10 @@ function App() {
         <Sidebar currentView={currentView} onViewChange={setCurrentView} />
         <main className='main-content'>{renderCurrentView()}</main>
       </div>
+      <UpdateDialog 
+        isOpen={showUpdateDialog} 
+        onClose={() => setShowUpdateDialog(false)} 
+      />
     </div>
   );
 }

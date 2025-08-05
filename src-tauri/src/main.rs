@@ -8,6 +8,7 @@ mod file_organizer;
 mod config;
 mod subscription;
 mod apple_subscription;
+mod updater;
 
 #[cfg(target_os = "macos")]
 mod storekit_bridge;
@@ -513,6 +514,7 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
             organizer: Mutex::new(None),
             is_monitoring: Mutex::new(false),
@@ -538,7 +540,13 @@ fn main() {
             restore_apple_purchases,
             get_local_receipt_data,
             show_main_window,
-            hide_main_window
+            hide_main_window,
+            updater::check_update,
+            updater::install_update,
+            updater::scheduler::get_scheduler_config,
+            updater::scheduler::update_scheduler_config,
+            updater::github::get_github_releases,
+            updater::github::get_latest_github_release
         ])
         .setup(|app| {
             // 设置系统托盘
