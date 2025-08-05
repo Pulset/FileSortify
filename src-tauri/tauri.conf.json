@@ -54,7 +54,7 @@
     "updater": {
       "dialog": false,
       "endpoints": [
-        "https://raw.githubusercontent.com/Pulset/FileSortify/main/public/updates.json"
+        "https://raw.githubusercontent.com/Pulset/FileSortify/refs/heads/main/public/updates.json?token=GHSAT0AAAAAADAUNP5O4BCHTEVRLIZDVQD62ERTORA"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlCOTUxQkEwRDAxNzE3MDIKUldRQ0Z4ZlFvQnVWbTVTSTJ5ZzBLU2FIR21RWFhqRG56YUVLY2JHcFp6eVhoellnTWg1TEMrUXgK",
       "windows": {
