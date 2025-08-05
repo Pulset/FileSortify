@@ -30,21 +30,26 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
       - name: Sync node version and setup cache
         uses: actions/setup-node@v4
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install frontend dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Generate update JSON
         run: |
           node scripts/generate-update-json.js ${{ github.ref_name }} "FileSortify ${{ github.ref_name }} 版本发布"
 
       - name: Build the app (macOS ARM)
-        run: npm run build-mac-arm
+        run: pnpm run build-mac-arm
 
   sign-and-notarize-macos:
     if: contains(github.ref, 'refs/tags/')
