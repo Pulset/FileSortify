@@ -438,6 +438,12 @@ async fn hide_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
     }
 }
 
+// Tauri命令：获取应用版本
+#[tauri::command]
+async fn get_app_version(app_handle: tauri::AppHandle) -> Result<String, String> {
+    Ok(app_handle.package_info().version.to_string())
+}
+
 // 设置系统托盘
 fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{
@@ -541,6 +547,7 @@ fn main() {
             get_local_receipt_data,
             show_main_window,
             hide_main_window,
+            get_app_version,
             updater::check_update,
             updater::install_update,
             updater::scheduler::get_scheduler_config,

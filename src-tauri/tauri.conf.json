@@ -34,6 +34,7 @@
   "bundle": {
     "active": true,
     "category": "Utility",
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/128x128.png",
       "icons/128x128@2x.png",
@@ -52,9 +53,8 @@
   "identifier": "com.fileSortify.tool",
   "plugins": {
     "updater": {
-      "dialog": false,
       "endpoints": [
-        "https://raw.githubusercontent.com/Pulset/FileSortify/refs/heads/main/public/updates.json?token=GHSAT0AAAAAADAUNP5O4BCHTEVRLIZDVQD62ERTORA"
+        "https://oss.picasso-designs.com/FileSortify/releases/updates.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlCOTUxQkEwRDAxNzE3MDIKUldRQ0Z4ZlFvQnVWbTVTSTJ5ZzBLU2FIR21RWFhqRG56YUVLY2JHcFp6eVhoellnTWg1TEMrUXgK",
       "windows": {

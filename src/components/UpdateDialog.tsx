@@ -38,16 +38,23 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
       setProgress(100);
     });
 
+    // 监听应用重启
+    const unlistenRestart = listen('update-restart', () => {
+      // 可以在这里显示重启提示
+      console.log('应用即将重启...');
+    });
+
     return () => {
       unlistenProgress.then(f => f());
       unlistenCompleted.then(f => f());
+      unlistenRestart.then(f => f());
     };
   }, [isOpen]);
 
   const checkForUpdates = async () => {
     setIsChecking(true);
     setError(null);
-    
+
     try {
       const status = await invoke<UpdateStatus>('check_update');
       setUpdateStatus(status);
@@ -62,7 +69,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
     setIsInstalling(true);
     setProgress(0);
     setError(null);
-    
+
     try {
       await invoke('install_update');
     } catch (err) {
@@ -78,7 +85,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">应用更新</h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             disabled={isInstalling}
@@ -131,13 +138,13 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
                       <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
                     {progress === 100 && (
-                      <p className="text-green-600 text-sm mt-2">更新完成，应用将重启</p>
+                      <p className="text-green-600 text-sm mt-2">更新完成，应用将在2秒后自动重启</p>
                     )}
                   </div>
                 ) : (

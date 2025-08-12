@@ -82,7 +82,18 @@ pub async fn download_and_install(app: AppHandle) -> Result<(), String> {
                             let _ = app.emit("update-completed", ());
                         },
                     ).await {
-                        Ok(_) => Ok(()),
+                        Ok(_) => {
+                            // 更新安装成功后，延迟重启应用
+                            let app_clone = app.clone();
+                            tokio::spawn(async move {
+                                // 给前端一点时间显示完成状态
+                                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                                let _ = app_clone.emit("update-restart", ());
+                                // 重启应用
+                                app_clone.restart();
+                            });
+                            Ok(())
+                        },
                         Err(e) => {
                             log::error!("Update installation failed: {}", e);
                             Err(format!("Update installation failed: {}", e))
@@ -113,4 +124,10 @@ pub async fn check_update(app: AppHandle) -> Result<UpdateStatus, String> {
 #[tauri::command]
 pub async fn install_update(app: AppHandle) -> Result<(), String> {
     download_and_install(app).await
+}
+
+#[tauri::command]
+pub async fn restart_app(app: AppHandle) -> Result<(), String> {
+    app.restart();
+    Ok(())
 }

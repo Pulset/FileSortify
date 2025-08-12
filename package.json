@@ -1,5 +1,5 @@
 {
-  "name": "FileSortify",
+  "name": "File Sortify",
   "version": "1.0.1",
   "description": "智能文件自动分类工具 - Mac客户端",
   "main": "src/index.html",
