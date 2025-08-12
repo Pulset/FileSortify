@@ -41,8 +41,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
 
       await addCategory(newCategoryName.trim(), extensions);
       addLog(
-        `✅ 成功添加分类: ${newCategoryName.trim()}，包含 ${
-          extensions.length
+        `✅ 成功添加分类: ${newCategoryName.trim()}，包含 ${extensions.length
         } 个扩展名`
       );
       setNewCategoryName('');
@@ -343,7 +342,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
               </div>
             </div>
 
-            <div className='config-actions-section'>
+            {/* <div className='config-actions-section'>
               <div className='section-title'>配置操作</div>
               <div className='config-actions'>
                 <button
@@ -389,7 +388,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                   重置默认
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       )}

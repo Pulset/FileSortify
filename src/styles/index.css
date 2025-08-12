@@ -54,7 +54,8 @@ body {
 /* 主应用容器 */
 .app-container {
   display: flex;
-  height: calc(100vh - 40px);
+  /* height: calc(100vh - 40px); */
+  height: 100vh;
 }
 
 /* 侧边栏 */
@@ -135,7 +136,8 @@ body {
   right: 0;
   bottom: 0;
   padding: 24px 32px;
-  max-width: 900px;
+  /* max-width: 900px; */
+  width: 100%;
   margin: 0 auto;
   min-height: calc(100vh - 40px);
   opacity: 0;
@@ -484,10 +486,6 @@ input:focus-visible {
   font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
-}
-
-.setting-content {
-  margin-left: 32px;
 }
 
 .input-group {

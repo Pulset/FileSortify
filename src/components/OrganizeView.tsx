@@ -177,16 +177,6 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       <div className='settings-section'>
         <div className='setting-card'>
           <div className='setting-header'>
-            <div className='setting-icon'>
-              <svg
-                width='20'
-                height='20'
-                viewBox='0 0 24 24'
-                fill='currentColor'
-              >
-                <path d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
-              </svg>
-            </div>
             <div className='setting-title'>添加新路径</div>
           </div>
           <div className='setting-content'>
@@ -343,9 +333,8 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                   </div>
                   <div className='path-status'>
                     <span
-                      className={`status-badge ${
-                        path.isMonitoring ? 'monitoring' : 'stopped'
-                      }`}
+                      className={`status-badge ${path.isMonitoring ? 'monitoring' : 'stopped'
+                        }`}
                     >
                       {path.isMonitoring ? '监控中' : '已停止'}
                     </span>
