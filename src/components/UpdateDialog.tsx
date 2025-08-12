@@ -25,6 +25,50 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
   useEffect(() => {
     if (isOpen) {
       checkForUpdates();
+      // 禁用页面滚动 - 针对主要的滚动容器
+      const viewElements = document.querySelectorAll('.view');
+      const mainContent = document.querySelector('.main-content');
+
+      // 保存原始的 overflow 值
+      const originalOverflows: { element: Element; overflow: string }[] = [];
+
+      viewElements.forEach(element => {
+        const htmlElement = element as HTMLElement;
+        originalOverflows.push({
+          element: htmlElement,
+          overflow: htmlElement.style.overflow || getComputedStyle(htmlElement).overflow
+        });
+        htmlElement.style.overflow = 'hidden';
+      });
+
+      if (mainContent) {
+        const htmlElement = mainContent as HTMLElement;
+        originalOverflows.push({
+          element: htmlElement,
+          overflow: htmlElement.style.overflow || getComputedStyle(htmlElement).overflow
+        });
+        htmlElement.style.overflow = 'hidden';
+      }
+
+      // 也禁用 body 滚动作为备用
+      document.body.style.overflow = 'hidden';
+
+      // 存储到组件实例中以便清理
+      (window as any).__updateDialogOverflows = originalOverflows;
+    } else {
+      // 恢复页面滚动
+      const originalOverflows = (window as any).__updateDialogOverflows;
+      if (originalOverflows) {
+        originalOverflows.forEach(({ element, overflow }: { element: HTMLElement; overflow: string }) => {
+          if (overflow === 'auto' || overflow === 'scroll' || overflow === 'visible') {
+            element.style.overflow = overflow;
+          } else {
+            element.style.overflow = '';
+          }
+        });
+        delete (window as any).__updateDialogOverflows;
+      }
+      document.body.style.overflow = '';
     }
 
     // 监听更新进度
@@ -44,7 +88,20 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
       console.log('应用即将重启...');
     });
 
+    // 清理函数：确保组件卸载时恢复滚动
     return () => {
+      const originalOverflows = (window as any).__updateDialogOverflows;
+      if (originalOverflows) {
+        originalOverflows.forEach(({ element, overflow }: { element: HTMLElement; overflow: string }) => {
+          if (overflow === 'auto' || overflow === 'scroll' || overflow === 'visible') {
+            element.style.overflow = overflow;
+          } else {
+            element.style.overflow = '';
+          }
+        });
+        delete (window as any).__updateDialogOverflows;
+      }
+      document.body.style.overflow = '';
       unlistenProgress.then(f => f());
       unlistenCompleted.then(f => f());
       unlistenRestart.then(f => f());
@@ -80,14 +137,30 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
 
   if (!isOpen) return null;
 
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // 阻止点击弹框内容时关闭弹框
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleWheelEvent = (e: React.WheelEvent) => {
+    // 阻止滚轮事件冒泡到背景
+    e.stopPropagation();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">应用更新</h2>
+    <div
+      className="update-dialog-overlay"
+      onClick={handleOverlayClick}
+      onWheel={handleWheelEvent}
+    >
+      <div className="update-dialog" onWheel={handleWheelEvent}>
+        <div className="update-dialog-header">
+          <h2>应用更新</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="close-btn"
             disabled={isInstalling}
           >
             ✕
@@ -95,27 +168,27 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
         </div>
 
         {isChecking && (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-2 text-gray-600">正在检查更新...</p>
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>正在检查更新...</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="error-message">
+            <p>{error}</p>
           </div>
         )}
 
         {updateStatus && !isChecking && (
-          <div>
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                当前版本: <span className="font-medium">{updateStatus.current_version}</span>
+          <div className="update-content">
+            <div className="version-info">
+              <p>
+                当前版本: <span className="version-current">{updateStatus.current_version}</span>
               </p>
               {updateStatus.latest_version && (
-                <p className="text-sm text-gray-600">
-                  最新版本: <span className="font-medium text-green-600">{updateStatus.latest_version}</span>
+                <p>
+                  最新版本: <span className="version-latest">{updateStatus.latest_version}</span>
                 </p>
               )}
             </div>
@@ -123,41 +196,41 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
             {updateStatus.available ? (
               <div>
                 {updateStatus.body && (
-                  <div className="mb-4">
-                    <h3 className="font-medium mb-2">更新内容:</h3>
-                    <div className="bg-gray-50 rounded p-3 max-h-32 overflow-y-auto">
-                      <pre className="text-sm whitespace-pre-wrap">{updateStatus.body}</pre>
+                  <div className="update-notes">
+                    <h3>更新内容:</h3>
+                    <div className="update-body">
+                      <pre>{updateStatus.body}</pre>
                     </div>
                   </div>
                 )}
 
                 {isInstalling ? (
-                  <div className="mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">下载进度</span>
-                      <span className="text-sm text-gray-600">{Math.round(progress)}%</span>
+                  <div className="progress-section">
+                    <div className="progress-header">
+                      <span>下载进度</span>
+                      <span>{Math.round(progress)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="progress-bar">
                       <div
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        className="progress-fill"
                         style={{ width: `${progress}%` }}
                       ></div>
                     </div>
                     {progress === 100 && (
-                      <p className="text-green-600 text-sm mt-2">更新完成，应用将在2秒后自动重启</p>
+                      <p className="progress-complete">更新完成，应用将在2秒后自动重启</p>
                     )}
                   </div>
                 ) : (
-                  <div className="flex gap-3">
+                  <div className="action-buttons">
                     <button
                       onClick={installUpdate}
-                      className="flex-1 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+                      className="btn primary-btn"
                     >
                       立即更新
                     </button>
                     <button
                       onClick={onClose}
-                      className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
+                      className="btn secondary-btn"
                     >
                       稍后更新
                     </button>
@@ -165,12 +238,12 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
                 )}
               </div>
             ) : (
-              <div className="text-center py-4">
-                <div className="text-green-600 mb-2">✓</div>
-                <p className="text-gray-600">已是最新版本</p>
+              <div className="no-update">
+                <div className="success-icon">✓</div>
+                <p>已是最新版本</p>
                 <button
                   onClick={onClose}
-                  className="mt-3 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors"
+                  className="btn secondary-btn"
                 >
                   关闭
                 </button>

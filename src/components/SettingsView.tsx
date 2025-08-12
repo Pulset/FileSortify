@@ -445,15 +445,6 @@ const SettingsView: React.FC = () => {
                   ))}
                 </div>
               </div>
-
-              <div style={{ paddingTop: '16px', borderTop: '1px solid #f3f4f6', textAlign: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px' }}>
-                  © 2025 FileSortify. All rights reserved.
-                </div>
-                <div style={{ fontSize: '11px', color: '#d1d5db' }}>
-                  Built with ❤️ using Tauri & React
-                </div>
-              </div>
             </div>
           </div>
         </div>
