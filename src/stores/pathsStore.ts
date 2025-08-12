@@ -241,7 +241,7 @@ export const usePathsStore = create<PathsState>()(
 
           return fileCount;
         } catch (error) {
-          throw error;
+          throw error
         }
       },
 
@@ -262,17 +262,17 @@ export const usePathsStore = create<PathsState>()(
             filesOrganized: total.filesOrganized + path.stats.filesOrganized,
             lastOrganized:
               path.stats.lastOrganized &&
-              (!total.lastOrganized ||
-                new Date(path.stats.lastOrganized) >
+                (!total.lastOrganized ||
+                  new Date(path.stats.lastOrganized) >
                   new Date(total.lastOrganized))
                 ? path.stats.lastOrganized
                 : total.lastOrganized,
             monitoringSince: paths.some((p) => p.isMonitoring)
               ? paths
-                  .filter((p) => p.isMonitoring)
-                  .map((p) => p.stats.monitoringSince)
-                  .filter(Boolean)
-                  .sort()[0] || null
+                .filter((p) => p.isMonitoring)
+                .map((p) => p.stats.monitoringSince)
+                .filter(Boolean)
+                .sort()[0] || null
               : null,
           }),
           {

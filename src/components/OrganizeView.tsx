@@ -59,8 +59,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       setNewPathName('');
       setShowAddForm(false);
     } catch (error) {
-      addLog(`❌ 添加路径失败: ${error?.message}`, 'error');
-      await message(`添加路径失败: ${error?.message}`, {
+      const msg = error instanceof Error ? error.message : error
+      addLog(`❌ 添加路径失败: ${msg}`, 'error');
+      await message(`添加路径失败: ${msg}`, {
         title: '错误',
         kind: 'error',
       });
@@ -81,8 +82,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
         await removePath(pathId);
         addLog(`✅ 已删除路径: ${path.name}`);
       } catch (error) {
-        addLog(`❌ 删除路径失败: ${error?.message}`, 'error');
-        await message(`删除路径失败: ${error?.message}`, {
+        const msg = error instanceof Error ? error.message : error
+        addLog(`❌ 删除路径失败: ${msg}`, 'error');
+        await message(`删除路径失败: ${msg}`, {
           title: '错误',
           kind: 'error',
         });
@@ -104,8 +106,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       setEditingPath(null);
       setEditName('');
     } catch (error) {
-      addLog(`❌ 更新路径名称失败: ${error?.message}`, 'error');
-      await message(`更新路径名称失败: ${error?.message}`, {
+      const msg = error instanceof Error ? error.message : error
+      addLog(`❌ 更新路径名称失败: ${msg}`, 'error');
+      await message(`更新路径名称失败: ${msg}`, {
         title: '错误',
         kind: 'error',
       });
@@ -129,8 +132,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
         addLog(`⏹️ 停止监控: ${path.name}`, 'info');
       }
     } catch (error) {
-      addLog(`❌ 切换监控状态失败: ${error?.message}`, 'error');
-      await message(`切换监控状态失败: ${error?.message}`, {
+      const msg = error instanceof Error ? error.message : error
+      addLog(`❌ 切换监控状态失败: ${msg}`, 'error');
+      await message(`切换监控状态失败: ${msg}`, {
         title: '错误',
         kind: 'error',
       });
@@ -146,8 +150,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       const fileCount = await organizePathFiles(pathId);
       addLog(`✅ ${path.name}: 整理了 ${fileCount} 个文件`, 'success');
     } catch (error) {
-      addLog(`❌ 整理失败 (${path.name}): ${error?.message}`, 'error');
-      await message(`整理文件失败: ${error?.message}`, {
+      const msg = error instanceof Error ? error.message : error
+      addLog(`❌ 整理失败 (${path.name}): ${msg}`, 'error');
+      await message(`整理文件失败: ${msg}`, {
         title: '错误',
         kind: 'error',
       });
