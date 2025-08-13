@@ -92,7 +92,7 @@ export class TauriAPI {
         'Event listening failed, possibly due to permissions:',
         error
       );
-      return () => {}; // 返回一个空的取消函数
+      return () => { }; // 返回一个空的取消函数
     }
   }
 
@@ -231,6 +231,42 @@ export class TauriAPI {
       throw new Error('Subscription cancellation not available in web mode');
     }
     return this.invoke('cancel_subscription');
+  }
+
+  // Creem 订阅相关方法
+  async createCreemSession(plan: string): Promise<any> {
+    if (!this.initialized) {
+      throw new Error('Creem payments not available in web mode');
+    }
+    return this.invoke('create_creem_session', { plan });
+  }
+
+  async checkCreemPaymentStatus(): Promise<any> {
+    if (!this.initialized) {
+      throw new Error('Creem payment status check not available in web mode');
+    }
+    return this.invoke('check_creem_payment_status');
+  }
+
+  async openCreemPaymentPage(plan: string): Promise<string> {
+    if (!this.initialized) {
+      throw new Error('Creem payment page not available in web mode');
+    }
+    return this.invoke('open_creem_payment_page', { plan });
+  }
+
+  async setWebhookServerUrl(url: string): Promise<string> {
+    if (!this.initialized) {
+      throw new Error('Webhook server URL setting not available in web mode');
+    }
+    return this.invoke('set_webhook_server_url', { url });
+  }
+
+  async getCurrentSessionInfo(): Promise<string | null> {
+    if (!this.initialized) {
+      return null;
+    }
+    return this.invoke('get_current_session_info');
   }
 }
 

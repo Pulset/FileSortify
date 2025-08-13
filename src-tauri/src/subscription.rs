@@ -7,8 +7,7 @@ use crate::apple_subscription::{AppleSubscriptionValidator, AppleSubscriptionCon
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SubscriptionPlan {
     Free,
-    Monthly,
-    Yearly,
+    Lifetime,  // 买断版本
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +30,11 @@ pub struct Subscription {
     pub apple_receipt_data: Option<String>,
     pub apple_transaction_id: Option<String>,
     pub auto_renew_enabled: bool,
+    // Creem 相关字段
+    pub creem_session_id: Option<String>,
+    pub creem_transaction_id: Option<String>,
+    pub webhook_server_url: String,
+    pub package_id: String
 }
 
 impl Subscription {
@@ -48,6 +52,10 @@ impl Subscription {
             apple_receipt_data: None,
             apple_transaction_id: None,
             auto_renew_enabled: false,
+            creem_session_id: None,
+            creem_transaction_id: None,
+            webhook_server_url: "http://localhost:3000".to_string(),
+            package_id: "cme9f2aum0000uph23ghk00sd".to_string(),
         }
     }
     
@@ -95,10 +103,10 @@ impl Subscription {
     pub fn is_subscription_active(&self) -> bool {
         match self.status {
             SubscriptionStatus::Active => {
-                if let Some(end_date) = self.subscription_end_date {
-                    Utc::now() < end_date
-                } else {
-                    false
+                // 买断版本没有过期时间，一旦激活就永久有效
+                match self.plan {
+                    SubscriptionPlan::Lifetime => true,
+                    _ => false,
                 }
             }
             _ => false
@@ -130,16 +138,16 @@ impl Subscription {
     
     pub fn activate_subscription(&mut self, plan: SubscriptionPlan) -> Result<(), Box<dyn std::error::Error>> {
         let now = Utc::now();
-        let duration = match plan {
-            SubscriptionPlan::Monthly => Duration::days(30),
-            SubscriptionPlan::Yearly => Duration::days(365),
-            SubscriptionPlan::Free => return Err("无法激活免费计划".into()),
-        };
         
-        self.plan = plan;
-        self.status = SubscriptionStatus::Active;
-        self.subscription_start_date = Some(now);
-        self.subscription_end_date = Some(now + duration);
+        match plan {
+            SubscriptionPlan::Lifetime => {
+                self.plan = plan;
+                self.status = SubscriptionStatus::Active;
+                self.subscription_start_date = Some(now);
+                self.subscription_end_date = None; // 买断版本没有过期时间
+            }
+            SubscriptionPlan::Free => return Err("无法激活免费计划".into()),
+        }
         
         self.save()?;
         Ok(())
@@ -153,72 +161,58 @@ impl Subscription {
     
     pub fn get_pricing_info() -> PricingInfo {
         PricingInfo {
-            monthly_price: 1.99,
-            yearly_price: 19.99,
+            lifetime_price: 20.0,
             trial_days: 3,
             currency: "USD".to_string(),
         }
     }
 
-    /// 验证Apple订阅收据
-    pub async fn verify_apple_receipt(&mut self, receipt_data: String) -> Result<(), Box<dyn std::error::Error>> {
-        let config = AppleSubscriptionConfig::default();
-        let validator = AppleSubscriptionValidator::new(config.shared_secret, config.bundle_id);
+    pub fn get_packages_info() -> PackagesResponse {
+        let pricing = Self::get_pricing_info();
         
-        let apple_status = validator.validate_subscription(&receipt_data).await?;
-        
-        if apple_status.is_active {
-            // 根据产品ID确定订阅计划
-            let plan = if apple_status.product_id == config.monthly_product_id {
-                SubscriptionPlan::Monthly
-            } else if apple_status.product_id == config.yearly_product_id {
-                SubscriptionPlan::Yearly
-            } else {
-                return Err("Unknown product ID".into());
-            };
-
-            self.plan = plan;
-            self.status = SubscriptionStatus::Active;
-            self.subscription_start_date = Some(Utc::now());
-            self.subscription_end_date = apple_status.expires_date;
-            self.apple_receipt_data = Some(receipt_data);
-            self.auto_renew_enabled = apple_status.auto_renew_status;
-            
-            if apple_status.is_cancelled {
-                self.status = SubscriptionStatus::Cancelled;
+        PackagesResponse {
+            packages: PackageInfo {
+                id:"cme9f2aum0000uph23ghk00sd".to_string(),
+                name: "File Sortify".to_string(),
+                description: "".to_string(),
+                price: (pricing.lifetime_price * 100.0) as i32, // Convert to cents
+                currency: pricing.currency,
+                product_id: "prod_1FjuD56FEgYYC8VKIwEACW".to_string(),
+                created_at: "2025-08-13T03:34:20.014Z".to_string(),
+                updated_at: "2025-08-13T03:34:20.014Z".to_string(),
             }
-        } else {
-            self.status = SubscriptionStatus::Expired;
         }
-        
-        self.save()?;
-        Ok(())
     }
 
-    /// 刷新Apple订阅状态
-    pub async fn refresh_apple_subscription(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        if let Some(receipt_data) = &self.apple_receipt_data {
-            let config = AppleSubscriptionConfig::default();
-            let validator = AppleSubscriptionValidator::new(config.shared_secret, config.bundle_id);
-            
-            let apple_status = validator.validate_subscription(receipt_data).await?;
-            
-            if apple_status.is_active {
-                self.status = SubscriptionStatus::Active;
-                self.subscription_end_date = apple_status.expires_date;
-                self.auto_renew_enabled = apple_status.auto_renew_status;
-                
-                if apple_status.is_cancelled {
-                    self.status = SubscriptionStatus::Cancelled;
-                }
-            } else {
-                self.status = SubscriptionStatus::Expired;
-            }
-            
-            self.save()?;
+    /// 从服务端获取套餐信息
+    pub async fn fetch_packages_from_server(&mut self) -> Result<PackagesResponse, Box<dyn std::error::Error>> {
+        let client = reqwest::Client::new();
+        let response = client
+            .get(&format!("{}/api/packages?name=File%20Sortify", self.webhook_server_url))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(format!("Failed to fetch packages: {}", response.status()).into());
         }
+
+        let packages_response: PackagesResponse = response.json().await?;
         
-        Ok(())
+        self.package_id = packages_response.packages.id.clone();
+        self.save()?;
+        Ok(packages_response)
+    }
+
+    /// 验证Apple订阅收据 (已禁用，仅保留兼容性)
+    pub async fn verify_apple_receipt(&mut self, _receipt_data: String) -> Result<(), Box<dyn std::error::Error>> {
+        // Apple Store 功能已禁用，直接返回错误
+        Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
+    }
+
+    /// 刷新Apple订阅状态 (已禁用，仅保留兼容性)
+    pub async fn refresh_apple_subscription(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        // Apple Store 功能已禁用，直接返回错误
+        Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
     }
 
     /// 检查是否需要刷新订阅状态
@@ -275,14 +269,180 @@ impl Subscription {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PricingInfo {
-    pub monthly_price: f64,
-    pub yearly_price: f64,
+    pub lifetime_price: f64,
     pub trial_days: i32,
     pub currency: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageInfo {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub price: i32, // Price in cents
+    pub currency: String,
+    #[serde(rename = "productId")]
+    pub product_id: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesResponse {
+    pub packages: PackageInfo,
 }
 
 impl Default for Subscription {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// Creem 相关结构体
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreemSessionRequest {
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[serde(rename = "packageId")]
+    pub package_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserPackage {
+    pub id: String,
+    #[serde(rename = "userId")]
+    pub user_id: String,
+    #[serde(rename = "packageId")]
+    pub package_id: String,
+    #[serde(rename = "checkoutId")]
+    pub checkout_id: Option<String>,
+    pub status: String,
+    pub amount: i32,
+    pub currency: String,
+    pub metadata: serde_json::Value,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    #[serde(rename = "expiresAt")]
+    pub expires_at: Option<String>,
+    pub package: PackageInfo,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreemSessionResponse {
+    #[serde(rename = "userPackage")]
+    pub user_package: UserPackage,
+    #[serde(rename = "checkoutUrl")]
+    pub checkout_url: String,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreemPaymentStatus {
+    #[serde(rename = "userPackage")]
+    pub user_package: UserPackage,
+}
+
+
+
+impl Subscription {
+    /// 创建 Creem 支付会话
+    pub async fn create_creem_session(&mut self, plan: SubscriptionPlan) -> Result<CreemSessionResponse, Box<dyn std::error::Error>> {
+        let _plan_str = match plan {
+            SubscriptionPlan::Lifetime => "lifetime",
+            SubscriptionPlan::Free => return Err("Cannot create session for free plan".into()),
+        };
+
+        let request = CreemSessionRequest {
+            user_id: self.device_id.clone(),
+            package_id: self.package_id.clone(),
+        };
+
+        let client = reqwest::Client::new();
+        let response = client
+            .post(&format!("{}/api/checkout", self.webhook_server_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(format!("Failed to create session: {}", response.status()).into());
+        }
+
+        let session_response: CreemSessionResponse = response.json().await?;
+        
+        // 保存会话ID（使用 userPackage 的 id）
+        self.creem_session_id = Some(session_response.user_package.id.clone());
+        self.save()?;
+
+        Ok(session_response)
+    }
+
+    /// 检查 Creem 支付状态
+    pub async fn check_creem_payment_status(&mut self) -> Result<CreemPaymentStatus, Box<dyn std::error::Error>> {
+        let session_id = self.creem_session_id.as_ref()
+            .ok_or("No active Creem session")?;
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get(&format!("{}/api/user-packages/{}", self.webhook_server_url, session_id))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(format!("Failed to check status: {}", response.status()).into());
+        }
+
+        let payment_status: CreemPaymentStatus = response.json().await?;
+
+        // 如果支付完成，更新订阅状态
+        if payment_status.user_package.status == "PAID" {
+            // 对于买断版本，直接激活为 Lifetime 计划
+            let plan = SubscriptionPlan::Lifetime;
+            
+            // 使用 checkout_id 作为 transaction_id
+            let transaction_id = payment_status.user_package.checkout_id
+                .clone()
+                .unwrap_or_else(|| payment_status.user_package.id.clone());
+
+            self.activate_creem_subscription(plan, transaction_id)?;
+        }
+
+        Ok(payment_status)
+    }
+
+    /// 激活 Creem 订阅
+    pub fn activate_creem_subscription(&mut self, plan: SubscriptionPlan, transaction_id: String) -> Result<(), Box<dyn std::error::Error>> {
+        let now = Utc::now();
+
+        match plan {
+            SubscriptionPlan::Lifetime => {
+                self.plan = plan;
+                self.status = SubscriptionStatus::Active;
+                self.subscription_start_date = Some(now);
+                self.subscription_end_date = None; // 买断版本没有过期时间
+                self.creem_transaction_id = Some(transaction_id);
+                self.last_check_date = Utc::now();
+            }
+            SubscriptionPlan::Free => return Err("Cannot activate free plan".into()),
+        }
+
+        self.save()?;
+        Ok(())
+    }
+
+    /// 设置 webhook 服务器 URL
+    pub fn set_webhook_server_url(&mut self, url: String) -> Result<(), Box<dyn std::error::Error>> {
+        self.webhook_server_url = url;
+        self.save()?;
+        Ok(())
+    }
+
+    /// 获取当前的支付会话信息
+    pub fn get_current_session_info(&self) -> Option<String> {
+        self.creem_session_id.clone()
     }
 }

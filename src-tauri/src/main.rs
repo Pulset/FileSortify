@@ -15,7 +15,7 @@ mod storekit_bridge;
 
 use file_organizer::fileSortify;
 use config::Config;
-use subscription::{Subscription, SubscriptionPlan, PricingInfo};
+use subscription::{Subscription, SubscriptionPlan, PricingInfo, PackagesResponse};
 
 // 全局状态
 struct AppState {
@@ -198,10 +198,34 @@ async fn can_use_app(
     Ok(subscription.can_use_app())
 }
 
-// Tauri命令：获取定价信息
+// Tauri命令：获取套餐信息 (API: /api/packages)
 #[tauri::command]
-async fn get_pricing_info() -> Result<PricingInfo, String> {
-    Ok(Subscription::get_pricing_info())
+async fn get_packages() -> Result<PackagesResponse, String> {
+    Ok(Subscription::get_packages_info())
+}
+
+// Tauri命令：从服务端获取套餐信息
+#[tauri::command]
+async fn fetch_packages_from_server(
+    state: State<'_, AppState>,
+) -> Result<PackagesResponse, String> {
+    // 先克隆订阅数据，避免跨异步边界持有锁
+    let mut subscription_clone = {
+        let subscription = state.subscription.lock().unwrap();
+        subscription.clone()
+    };
+    
+    match subscription_clone.fetch_packages_from_server().await {
+        Ok(packages) => {
+            // 更新状态
+            {
+                let mut subscription = state.subscription.lock().unwrap();
+                *subscription = subscription_clone;
+            }
+            Ok(packages)
+        },
+        Err(e) => Err(format!("获取套餐信息失败: {}", e))
+    }
 }
 
 // Tauri命令：激活订阅（模拟支付成功后调用）
@@ -214,8 +238,7 @@ async fn activate_subscription(
     let mut subscription = state.subscription.lock().unwrap();
     
     let subscription_plan = match plan.as_str() {
-        "monthly" => SubscriptionPlan::Monthly,
-        "yearly" => SubscriptionPlan::Yearly,
+        "lifetime" => SubscriptionPlan::Lifetime,
         _ => return Err("无效的订阅计划".to_string()),
     };
     
@@ -224,14 +247,13 @@ async fn activate_subscription(
             // 发送通知
             let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                 .builder()
-                .title("订阅激活成功")
-                .body(&format!("感谢您订阅{}计划！", 
-                    if plan == "monthly" { "月度" } else { "年度" }))
+                .title("购买成功")
+                .body("感谢您购买 FileSortify！现在可以无限制使用所有功能。")
                 .show();
                 
-            Ok("订阅激活成功".to_string())
+            Ok("购买激活成功".to_string())
         }
-        Err(e) => Err(format!("激活订阅失败: {}", e))
+        Err(e) => Err(format!("激活购买失败: {}", e))
     }
 }
 
@@ -258,22 +280,10 @@ async fn cancel_subscription(
     }
 }
 
-// Tauri命令：打开支付页面
+// Tauri命令：打开支付页面 (已禁用，仅保留兼容性)
 #[tauri::command]
-async fn open_payment_page(plan: String, app_handle: tauri::AppHandle) -> Result<(), String> {
-    let url = match plan.as_str() {
-        "monthly" => "https://your-payment-provider.com/monthly",
-        "yearly" => "https://your-payment-provider.com/yearly",
-        _ => return Err("无效的订阅计划".to_string()),
-    };
-    
-    use tauri_plugin_opener::OpenerExt;
-    
-    if let Err(e) = app_handle.opener().open_url(url, None::<String>) {
-        return Err(format!("打开支付页面失败: {}", e));
-    }
-    
-    Ok(())
+async fn open_payment_page(_plan: String, _app_handle: tauri::AppHandle) -> Result<(), String> {
+    Err("此功能已禁用，请使用 Creem 支付".to_string())
 }
 
 // Tauri命令：验证Apple收据
@@ -335,25 +345,10 @@ async fn refresh_apple_subscription(
     }
 }
 
-// Tauri命令：获取Apple产品信息
+// Tauri命令：获取Apple产品信息 (已禁用，仅保留兼容性)
 #[tauri::command]
 async fn get_apple_products() -> Result<serde_json::Value, String> {
-    let config = apple_subscription::AppleSubscriptionConfig::default();
-    
-    let products = serde_json::json!({
-        "monthly": {
-            "product_id": config.monthly_product_id,
-            "price": "$1.99",
-            "period": "month"
-        },
-        "yearly": {
-            "product_id": config.yearly_product_id,
-            "price": "$19.99",
-            "period": "year"
-        }
-    });
-    
-    Ok(products)
+    Err("Apple Store 功能已禁用，请使用 Creem 支付".to_string())
 }
 
 // Tauri命令：启动App Store内购流程
@@ -413,6 +408,116 @@ async fn get_local_receipt_data() -> Result<String, String> {
     {
         Err("App Store收据仅在macOS上可用".to_string())
     }
+}
+
+// Creem 订阅相关命令
+
+// Tauri命令：创建 Creem 支付会话
+#[tauri::command]
+async fn create_creem_session(
+    plan: String,
+    state: State<'_, AppState>,
+) -> Result<subscription::CreemSessionResponse, String> {
+    let subscription_plan = match plan.as_str() {
+        "lifetime" => SubscriptionPlan::Lifetime,
+        _ => return Err("无效的订阅计划".to_string()),
+    };
+
+    // 先克隆订阅数据，避免跨异步边界持有锁
+    let mut subscription_clone = {
+        let subscription = state.subscription.lock().unwrap();
+        subscription.clone()
+    };
+
+    match subscription_clone.create_creem_session(subscription_plan).await {
+        Ok(session_response) => {
+            // 更新状态
+            {
+                let mut subscription = state.subscription.lock().unwrap();
+                *subscription = subscription_clone;
+            }
+            Ok(session_response)
+        }
+        Err(e) => Err(format!("创建支付会话失败: {}", e))
+    }
+}
+
+// Tauri命令：检查 Creem 支付状态
+#[tauri::command]
+async fn check_creem_payment_status(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<subscription::CreemPaymentStatus, String> {
+    // 先克隆订阅数据，避免跨异步边界持有锁
+    let mut subscription_clone = {
+        let subscription = state.subscription.lock().unwrap();
+        subscription.clone()
+    };
+
+    match subscription_clone.check_creem_payment_status().await {
+        Ok(payment_status) => {
+            // 如果支付完成，发送通知
+            if payment_status.user_package.status == "PAID" {
+                let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
+                    .builder()
+                    .title("购买成功")
+                    .body("感谢您购买 FileSortify！现在可以无限制使用所有功能。")
+                    .show();
+            }
+
+            // 更新状态
+            {
+                let mut subscription = state.subscription.lock().unwrap();
+                *subscription = subscription_clone;
+            }
+
+            Ok(payment_status)
+        }
+        Err(e) => Err(format!("检查支付状态失败: {}", e))
+    }
+}
+
+// Tauri命令：打开 Creem 支付页面
+#[tauri::command]
+async fn open_creem_payment_page(
+    plan: String,
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    // 创建支付会话
+    let session_response = create_creem_session(plan, state).await?;
+
+    // 打开支付页面
+    use tauri_plugin_opener::OpenerExt;
+    
+    if let Err(e) = app_handle.opener().open_url(&session_response.checkout_url, None::<String>) {
+        return Err(format!("打开支付页面失败: {}", e));
+    }
+
+    Ok(session_response.user_package.id)
+}
+
+// Tauri命令：设置 webhook 服务器 URL
+#[tauri::command]
+async fn set_webhook_server_url(
+    url: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut subscription = state.subscription.lock().unwrap();
+    
+    match subscription.set_webhook_server_url(url) {
+        Ok(_) => Ok("Webhook 服务器 URL 已更新".to_string()),
+        Err(e) => Err(format!("更新 URL 失败: {}", e))
+    }
+}
+
+// Tauri命令：获取当前支付会话信息
+#[tauri::command]
+async fn get_current_session_info(
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    let subscription = state.subscription.lock().unwrap();
+    Ok(subscription.get_current_session_info())
 }
 
 // Tauri命令：显示主窗口
@@ -535,16 +640,22 @@ fn main() {
             get_default_downloads_folder,
             get_subscription_status,
             can_use_app,
-            get_pricing_info,
+            get_packages,
+            fetch_packages_from_server,
             activate_subscription,
             cancel_subscription,
-            open_payment_page,
-            verify_apple_receipt,
-            refresh_apple_subscription,
-            get_apple_products,
-            start_apple_purchase,
-            restore_apple_purchases,
-            get_local_receipt_data,
+            // Apple Store 相关命令已隐藏
+            // verify_apple_receipt,
+            // refresh_apple_subscription,
+            // get_apple_products,
+            // start_apple_purchase,
+            // restore_apple_purchases,
+            // get_local_receipt_data,
+            create_creem_session,
+            check_creem_payment_status,
+            open_creem_payment_page,
+            set_webhook_server_url,
+            get_current_session_info,
             show_main_window,
             hide_main_window,
             get_app_version,
