@@ -20,6 +20,7 @@ const SubscriptionView: React.FC = () => {
     try {
       if (tauriAPI.isInitialized()) {
         const status = await tauriAPI.getSubscriptionStatus();
+        console.log({ status })
         setSubscription(status);
       }
     } catch (error: any) {
@@ -75,11 +76,14 @@ const SubscriptionView: React.FC = () => {
 
     // Expired or Cancelled
     return (
-      <div className='subscription-card expired mb-6'>
-        <div className='subscription-status'>❌ 试用已结束</div>
-        <div className='subscription-details'>请购买完整版以继续使用</div>
+      <>
+        <div className='subscription-card expired mb-6'>
+          <div className='subscription-status'>❌ 试用已结束</div>
+          <div className='subscription-details'>请购买完整版以继续使用</div>
+        </div>
         <CreemSubscriptionView />
-      </div>
+      </>
+
     );
   };
 
@@ -98,7 +102,6 @@ const SubscriptionView: React.FC = () => {
     <div className='view active'>
       <div className='view-header'>
         <h1>购买</h1>
-        <p>购买 FileSortify 完整版</p>
       </div>
 
       <div className='subscription-section'>

@@ -17,7 +17,7 @@ interface UserPackage {
 }
 
 interface CreemPaymentStatus {
-    userPackage: UserPackage;
+    userPackages: UserPackage[];
 }
 
 interface PackageInfo {
@@ -106,15 +106,21 @@ const CreemSubscriptionView: React.FC = () => {
                 const status = await invoke<CreemPaymentStatus>('check_creem_payment_status');
                 setPaymentStatus(status);
 
-                if (status.userPackage.status === 'PAID' || status.userPackage.status === 'CANCELLED' || status.userPackage.status === 'EXPIRED') {
-                    clearInterval(interval);
-                    setPollInterval(null);
-                    setIsPolling(false);
+                // 只要有userPackages返回就表示已经购买了
+                if (status.userPackages.length > 0) {
+                    const userPackage = status.userPackages[0];
 
-                    if (status.userPackage.status === 'PAID') {
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
+                    // 如果是已支付状态，或者其他终止状态，停止轮询
+                    if (userPackage.status === 'PAID' || userPackage.status === 'CANCELLED' || userPackage.status === 'EXPIRED') {
+                        clearInterval(interval);
+                        setPollInterval(null);
+                        setIsPolling(false);
+
+                        if (userPackage.status === 'PAID') {
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        }
                     }
                 }
             } catch (error) {
@@ -162,22 +168,22 @@ const CreemSubscriptionView: React.FC = () => {
     return (
         <div className="max-w-md mx-auto p-6">
             {/* 支付状态 */}
-            {currentSession && paymentStatus && (
+            {currentSession && paymentStatus && paymentStatus.userPackages.length > 0 && (
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-700">支付状态</span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${paymentStatus.userPackage.status === 'PAID' ? 'bg-green-100 text-green-800' :
-                            paymentStatus.userPackage.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                paymentStatus.userPackage.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${paymentStatus.userPackages[0].status === 'PAID' ? 'bg-green-100 text-green-800' :
+                            paymentStatus.userPackages[0].status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                                paymentStatus.userPackages[0].status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                                     'bg-gray-100 text-gray-800'
                             }`}>
-                            {getStatusText(paymentStatus.userPackage.status)}
+                            {getStatusText(paymentStatus.userPackages[0].status)}
                         </span>
                     </div>
 
-                    {paymentStatus.userPackage.status === 'PAID' && (
+                    {paymentStatus.userPackages[0].status === 'PAID' && (
                         <div className="text-sm text-green-700">
-                            ✅ 支付成功！金额: ${(paymentStatus.userPackage.amount / 100).toFixed(2)}
+                            ✅ 支付成功！金额: ${(paymentStatus.userPackages[0].amount / 100).toFixed(2)}
                         </div>
                     )}
 
@@ -222,16 +228,6 @@ const CreemSubscriptionView: React.FC = () => {
                             '立即购买'
                         )}
                     </button>
-
-                    {/* 支付方式 */}
-                    <div className="mt-4 text-center">
-                        <p className="text-xs text-gray-500 mb-2">支持多种支付方式</p>
-                        <div className="flex items-center justify-center space-x-3 text-lg">
-                            <span>💳</span>
-                            <span>🏦</span>
-                            <span>📱</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 

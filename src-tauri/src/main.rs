@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::{State, Manager, WindowEvent, RunEvent};
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 
 mod file_organizer;
 mod config;
@@ -33,13 +33,13 @@ async fn organize_files(
 ) -> Result<String, String> {
     // 检查订阅状态
     {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         if !subscription.can_use_app() {
             return Err("试用期已结束，请订阅后继续使用".to_string());
         }
     }
     
-    let mut organizer_guard = state.organizer.lock().unwrap();
+    let mut organizer_guard = state.organizer.lock().await;
     
     match fileSortify::new(&folder_path) {
         Ok(organizer) => {
@@ -65,14 +65,14 @@ async fn toggle_monitoring(
 ) -> Result<bool, String> {
     // 检查订阅状态
     {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         if !subscription.can_use_app() {
             return Err("试用期已结束，请订阅后继续使用".to_string());
         }
     }
     
-    let mut is_monitoring = state.is_monitoring.lock().unwrap();
-    let mut organizer_guard = state.organizer.lock().unwrap();
+    let mut is_monitoring = state.is_monitoring.lock().await;
+    let mut organizer_guard = state.organizer.lock().await;
     
     if *is_monitoring {
         // 停止监控
@@ -185,7 +185,7 @@ async fn get_default_downloads_folder() -> Result<String, String> {
 async fn get_subscription_status(
     state: State<'_, AppState>,
 ) -> Result<Subscription, String> {
-    let subscription = state.subscription.lock().unwrap();
+    let subscription = state.subscription.lock().await;
     Ok(subscription.clone())
 }
 
@@ -194,8 +194,18 @@ async fn get_subscription_status(
 async fn can_use_app(
     state: State<'_, AppState>,
 ) -> Result<bool, String> {
-    let subscription = state.subscription.lock().unwrap();
+    let subscription = state.subscription.lock().await;
     Ok(subscription.can_use_app())
+}
+
+// Tauri命令：安全检查应用使用权限（包含服务端验证）
+#[tauri::command]
+async fn can_use_app_secure(
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
+    let mut subscription = state.subscription.lock().await;
+    let can_use = subscription.can_use_app_secure().await;
+    Ok(can_use)
 }
 
 // Tauri命令：获取套餐信息 (API: /api/packages)
@@ -211,7 +221,7 @@ async fn fetch_packages_from_server(
 ) -> Result<PackagesResponse, String> {
     // 先克隆订阅数据，避免跨异步边界持有锁
     let mut subscription_clone = {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         subscription.clone()
     };
     
@@ -219,7 +229,7 @@ async fn fetch_packages_from_server(
         Ok(packages) => {
             // 更新状态
             {
-                let mut subscription = state.subscription.lock().unwrap();
+                let mut subscription = state.subscription.lock().await;
                 *subscription = subscription_clone;
             }
             Ok(packages)
@@ -235,7 +245,7 @@ async fn activate_subscription(
     state: State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
-    let mut subscription = state.subscription.lock().unwrap();
+    let mut subscription = state.subscription.lock().await;
     
     let subscription_plan = match plan.as_str() {
         "lifetime" => SubscriptionPlan::Lifetime,
@@ -263,7 +273,7 @@ async fn cancel_subscription(
     state: State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
-    let mut subscription = state.subscription.lock().unwrap();
+    let mut subscription = state.subscription.lock().await;
     
     match subscription.cancel_subscription() {
         Ok(_) => {
@@ -295,7 +305,7 @@ async fn verify_apple_receipt(
 ) -> Result<String, String> {
     // 先克隆订阅数据，避免跨异步边界持有锁
     let mut subscription_clone = {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         subscription.clone()
     };
     
@@ -303,7 +313,7 @@ async fn verify_apple_receipt(
         Ok(_) => {
             // 更新状态
             {
-                let mut subscription = state.subscription.lock().unwrap();
+                let mut subscription = state.subscription.lock().await;
                 *subscription = subscription_clone;
             }
             
@@ -327,7 +337,7 @@ async fn refresh_apple_subscription(
 ) -> Result<String, String> {
     // 先克隆订阅数据，避免跨异步边界持有锁
     let mut subscription_clone = {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         subscription.clone()
     };
     
@@ -335,7 +345,7 @@ async fn refresh_apple_subscription(
         Ok(_) => {
             // 更新状态
             {
-                let mut subscription = state.subscription.lock().unwrap();
+                let mut subscription = state.subscription.lock().await;
                 *subscription = subscription_clone;
             }
             
@@ -425,7 +435,7 @@ async fn create_creem_session(
 
     // 先克隆订阅数据，避免跨异步边界持有锁
     let mut subscription_clone = {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         subscription.clone()
     };
 
@@ -433,7 +443,7 @@ async fn create_creem_session(
         Ok(session_response) => {
             // 更新状态
             {
-                let mut subscription = state.subscription.lock().unwrap();
+                let mut subscription = state.subscription.lock().await;
                 *subscription = subscription_clone;
             }
             Ok(session_response)
@@ -450,14 +460,14 @@ async fn check_creem_payment_status(
 ) -> Result<subscription::CreemPaymentStatus, String> {
     // 先克隆订阅数据，避免跨异步边界持有锁
     let mut subscription_clone = {
-        let subscription = state.subscription.lock().unwrap();
+        let subscription = state.subscription.lock().await;
         subscription.clone()
     };
 
     match subscription_clone.check_creem_payment_status().await {
         Ok(payment_status) => {
-            // 如果支付完成，发送通知
-            if payment_status.user_package.status == "PAID" {
+            // 如果支付完成，发送通知（只要有userPackages返回就表示已经购买了）
+            if !payment_status.user_packages.is_empty() {
                 let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                     .builder()
                     .title("购买成功")
@@ -467,7 +477,7 @@ async fn check_creem_payment_status(
 
             // 更新状态
             {
-                let mut subscription = state.subscription.lock().unwrap();
+                let mut subscription = state.subscription.lock().await;
                 *subscription = subscription_clone;
             }
 
@@ -503,7 +513,7 @@ async fn set_webhook_server_url(
     url: String,
     state: State<'_, AppState>,
 ) -> Result<String, String> {
-    let mut subscription = state.subscription.lock().unwrap();
+    let mut subscription = state.subscription.lock().await;
     
     match subscription.set_webhook_server_url(url) {
         Ok(_) => Ok("Webhook 服务器 URL 已更新".to_string()),
@@ -516,7 +526,7 @@ async fn set_webhook_server_url(
 async fn get_current_session_info(
     state: State<'_, AppState>,
 ) -> Result<Option<String>, String> {
-    let subscription = state.subscription.lock().unwrap();
+    let subscription = state.subscription.lock().await;
     Ok(subscription.get_current_session_info())
 }
 
@@ -640,6 +650,7 @@ fn main() {
             get_default_downloads_folder,
             get_subscription_status,
             can_use_app,
+            can_use_app_secure,
             get_packages,
             fetch_packages_from_server,
             activate_subscription,

@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use chrono::{DateTime, Utc, Duration};
-use crate::apple_subscription::{AppleSubscriptionValidator, AppleSubscriptionConfig};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SubscriptionPlan {
@@ -43,7 +44,7 @@ impl Subscription {
         
         Subscription {
             plan: SubscriptionPlan::Free,
-            status: SubscriptionStatus::Trial,
+            status: SubscriptionStatus::Expired,
             trial_start_date: Some(Utc::now()),
             subscription_start_date: None,
             subscription_end_date: None,
@@ -54,21 +55,29 @@ impl Subscription {
             auto_renew_enabled: false,
             creem_session_id: None,
             creem_transaction_id: None,
-            webhook_server_url: "http://localhost:3000".to_string(),
+            webhook_server_url: "https://creem-payment-service.vercel.app".to_string(),
             package_id: "cme9f2aum0000uph23ghk00sd".to_string(),
         }
     }
     
-    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let config_path = Self::get_subscription_path();
         
         if config_path.exists() {
-            let content = fs::read_to_string(&config_path)?;
+            let encrypted_content = fs::read(&config_path)?;
+            let content = Self::decrypt_data(&encrypted_content)?;
             let mut subscription: Subscription = serde_json::from_str(&content)?;
             
-            // 更新检查时间
-            subscription.last_check_date = Utc::now();
-            subscription.save()?;
+            // 验证数据完整性
+            if !subscription.verify_data_integrity() {
+                // 数据可能被篡改，重置为试用状态
+                subscription = Self::new();
+                subscription.save()?;
+            } else {
+                // 更新检查时间
+                subscription.last_check_date = Utc::now();
+                subscription.save()?;
+            }
             
             Ok(subscription)
         } else {
@@ -78,7 +87,7 @@ impl Subscription {
         }
     }
     
-    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let config_path = Self::get_subscription_path();
         
         if let Some(parent) = config_path.parent() {
@@ -86,7 +95,8 @@ impl Subscription {
         }
         
         let content = serde_json::to_string_pretty(self)?;
-        fs::write(&config_path, content)?;
+        let encrypted_content = Self::encrypt_data(&content)?;
+        fs::write(&config_path, encrypted_content)?;
         
         Ok(())
     }
@@ -114,7 +124,34 @@ impl Subscription {
     }
     
     pub fn can_use_app(&self) -> bool {
+        // 首先验证数据完整性
+        if !self.verify_subscription_integrity() {
+            return false;
+        }
+        
         self.is_trial_active() || self.is_subscription_active()
+    }
+
+    /// 安全的应用使用权限检查（异步版本，包含服务端验证）
+    pub async fn can_use_app_secure(&mut self) -> bool {
+        // 首先检查本地完整性
+        if !self.verify_subscription_integrity() {
+            return false;
+        }
+        
+        // 如果是激活状态，需要服务端验证
+        if matches!(self.status, SubscriptionStatus::Active) {
+            match self.verify_with_server().await {
+                Ok(is_valid) => is_valid,
+                Err(_) => {
+                    // 网络错误时，允许短期离线使用
+                    let hours_since_check = (Utc::now() - self.last_check_date).num_hours();
+                    hours_since_check < 72 // 允许72小时离线使用
+                }
+            }
+        } else {
+            self.is_trial_active()
+        }
     }
     
     pub fn get_trial_days_remaining(&self) -> i64 {
@@ -136,7 +173,7 @@ impl Subscription {
         }
     }
     
-    pub fn activate_subscription(&mut self, plan: SubscriptionPlan) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn activate_subscription(&mut self, plan: SubscriptionPlan) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let now = Utc::now();
         
         match plan {
@@ -153,7 +190,7 @@ impl Subscription {
         Ok(())
     }
     
-    pub fn cancel_subscription(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn cancel_subscription(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.status = SubscriptionStatus::Cancelled;
         self.save()?;
         Ok(())
@@ -185,7 +222,7 @@ impl Subscription {
     }
 
     /// 从服务端获取套餐信息
-    pub async fn fetch_packages_from_server(&mut self) -> Result<PackagesResponse, Box<dyn std::error::Error>> {
+    pub async fn fetch_packages_from_server(&mut self) -> Result<PackagesResponse, Box<dyn std::error::Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let response = client
             .get(&format!("{}/api/packages?name=File%20Sortify", self.webhook_server_url))
@@ -204,13 +241,13 @@ impl Subscription {
     }
 
     /// 验证Apple订阅收据 (已禁用，仅保留兼容性)
-    pub async fn verify_apple_receipt(&mut self, _receipt_data: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn verify_apple_receipt(&mut self, _receipt_data: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Apple Store 功能已禁用，直接返回错误
         Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
     }
 
     /// 刷新Apple订阅状态 (已禁用，仅保留兼容性)
-    pub async fn refresh_apple_subscription(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn refresh_apple_subscription(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Apple Store 功能已禁用，直接返回错误
         Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
     }
@@ -342,15 +379,187 @@ pub struct CreemSessionResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreemPaymentStatus {
-    #[serde(rename = "userPackage")]
-    pub user_package: UserPackage,
+    #[serde(rename = "userPackages")]
+    pub user_packages: Vec<UserPackage>,
 }
 
 
 
 impl Subscription {
+    /// 验证订阅状态的完整性
+    pub fn verify_subscription_integrity(&self) -> bool {
+        // 检查关键字段的一致性
+        match self.status {
+            SubscriptionStatus::Active => {
+                // 活跃订阅必须有开始时间
+                if self.subscription_start_date.is_none() {
+                    return false;
+                }
+                
+                // 买断版本不应该有结束时间
+                if matches!(self.plan, SubscriptionPlan::Lifetime) && self.subscription_end_date.is_some() {
+                    return false;
+                }
+                
+                // 必须有交易ID
+                if self.creem_transaction_id.is_none() && self.apple_transaction_id.is_none() {
+                    return false;
+                }
+            }
+            SubscriptionStatus::Trial => {
+                // 试用期必须有开始时间
+                if self.trial_start_date.is_none() {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+        
+        true
+    }
+
+    /// 生成订阅数据的校验和
+    fn generate_checksum(&self) -> String {
+        let mut hasher = DefaultHasher::new();
+        
+        // 使用关键字段生成校验和
+        format!("{:?}", self.status).hash(&mut hasher);
+        format!("{:?}", self.plan).hash(&mut hasher);
+        self.device_id.hash(&mut hasher);
+        
+        if let Some(start) = &self.subscription_start_date {
+            start.timestamp().hash(&mut hasher);
+        }
+        
+        if let Some(transaction_id) = &self.creem_transaction_id {
+            transaction_id.hash(&mut hasher);
+        }
+        
+        format!("{:x}", hasher.finish())
+    }
+
+    /// 验证数据完整性（包含校验和验证）
+    fn verify_data_integrity(&self) -> bool {
+        // 基本完整性检查
+        if !self.verify_subscription_integrity() {
+            return false;
+        }
+        
+        // 可以添加更多验证逻辑，比如时间戳合理性检查
+        if let Some(trial_start) = self.trial_start_date {
+            // 试用开始时间不能在未来
+            if trial_start > Utc::now() {
+                return false;
+            }
+            
+            // 试用开始时间不能太久远（比如超过1年前）
+            if (Utc::now() - trial_start).num_days() > 365 {
+                return false;
+            }
+        }
+        
+        if let Some(sub_start) = self.subscription_start_date {
+            // 订阅开始时间不能在未来
+            if sub_start > Utc::now() {
+                return false;
+            }
+        }
+        
+        true
+    }
+
+    /// 简单的XOR加密（用于混淆，不是强加密）
+    fn encrypt_data(data: &str) -> Result<Vec<u8>, Box<dyn std::error::Error + Send + Sync>> {
+        let key = Self::get_encryption_key();
+        let mut encrypted = Vec::new();
+        
+        for (i, byte) in data.bytes().enumerate() {
+            let key_byte = key[i % key.len()];
+            encrypted.push(byte ^ key_byte);
+        }
+        
+        Ok(encrypted)
+    }
+
+    /// 解密数据
+    fn decrypt_data(encrypted_data: &[u8]) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        let key = Self::get_encryption_key();
+        let mut decrypted = Vec::new();
+        
+        for (i, &byte) in encrypted_data.iter().enumerate() {
+            let key_byte = key[i % key.len()];
+            decrypted.push(byte ^ key_byte);
+        }
+        
+        String::from_utf8(decrypted).map_err(|e| e.into())
+    }
+
+    /// 生成基于设备的加密密钥
+    fn get_encryption_key() -> Vec<u8> {
+        let mut hasher = DefaultHasher::new();
+        
+        // 使用设备特征生成密钥
+        if let Ok(hostname) = std::env::var("COMPUTERNAME")
+            .or_else(|_| std::env::var("HOSTNAME"))
+            .or_else(|_| std::env::var("HOST")) {
+            hostname.hash(&mut hasher);
+        }
+        
+        if let Ok(username) = std::env::var("USERNAME")
+            .or_else(|_| std::env::var("USER")) {
+            username.hash(&mut hasher);
+        }
+        
+        // 添加应用特定的盐值
+        "FileSortify_v1.0_encryption_salt".hash(&mut hasher);
+        
+        let hash = hasher.finish();
+        
+        // 将hash转换为32字节密钥
+        let mut key = Vec::new();
+        for i in 0..32 {
+            key.push(((hash >> (i % 8)) & 0xFF) as u8);
+        }
+        
+        key
+    }
+
+    /// 验证服务端订阅状态（复用 check_creem_payment_status 逻辑）
+    pub async fn verify_with_server(&mut self) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        // 如果有 Creem 会话ID，直接使用现有的检查逻辑
+        match self.check_creem_payment_status().await {
+            Ok(payment_status) => {
+                // 检查支付状态是否与本地状态一致
+                let server_is_paid = !payment_status.user_packages.is_empty();
+                let local_is_active = matches!(self.status, SubscriptionStatus::Active);
+                
+                if local_is_active && !server_is_paid {
+                    // 本地显示激活但服务端显示未支付 - 可能被篡改
+                    self.status = SubscriptionStatus::Expired;
+                    self.save()?;
+                    return Ok(false);
+                }
+                
+                return Ok(server_is_paid);
+            }
+            Err(e) => {
+                // 网络错误或其他问题，记录但不立即失效
+                eprintln!("Server verification failed: {}", e);
+            }
+        }
+        
+        // 如果无法验证且是激活状态，降级处理
+        if matches!(self.status, SubscriptionStatus::Active) {
+            // 允许短期离线使用
+            let hours_since_check = (Utc::now() - self.last_check_date).num_hours();
+            return Ok(hours_since_check < 72);
+        }
+        
+        Ok(self.is_trial_active())
+    }
+
     /// 创建 Creem 支付会话
-    pub async fn create_creem_session(&mut self, plan: SubscriptionPlan) -> Result<CreemSessionResponse, Box<dyn std::error::Error>> {
+    pub async fn create_creem_session(&mut self, plan: SubscriptionPlan) -> Result<CreemSessionResponse, Box<dyn std::error::Error + Send + Sync>> {
         let _plan_str = match plan {
             SubscriptionPlan::Lifetime => "lifetime",
             SubscriptionPlan::Free => return Err("Cannot create session for free plan".into()),
@@ -382,13 +591,10 @@ impl Subscription {
     }
 
     /// 检查 Creem 支付状态
-    pub async fn check_creem_payment_status(&mut self) -> Result<CreemPaymentStatus, Box<dyn std::error::Error>> {
-        let session_id = self.creem_session_id.as_ref()
-            .ok_or("No active Creem session")?;
-
+    pub async fn check_creem_payment_status(&mut self) -> Result<CreemPaymentStatus, Box<dyn std::error::Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let response = client
-            .get(&format!("{}/api/user-packages/{}", self.webhook_server_url, session_id))
+            .get(&format!("{}/api/user-packages?userId={}&status=PAID", self.webhook_server_url, self.device_id.clone()))
             .send()
             .await?;
 
@@ -398,15 +604,18 @@ impl Subscription {
 
         let payment_status: CreemPaymentStatus = response.json().await?;
 
-        // 如果支付完成，更新订阅状态
-        if payment_status.user_package.status == "PAID" {
+        // 如果有任何已支付的用户套餐，表示已经购买了
+        if !payment_status.user_packages.is_empty() {
+            // 取第一个已支付的套餐
+            let user_package = &payment_status.user_packages[0];
+            
             // 对于买断版本，直接激活为 Lifetime 计划
             let plan = SubscriptionPlan::Lifetime;
             
             // 使用 checkout_id 作为 transaction_id
-            let transaction_id = payment_status.user_package.checkout_id
+            let transaction_id = user_package.checkout_id
                 .clone()
-                .unwrap_or_else(|| payment_status.user_package.id.clone());
+                .unwrap_or_else(|| user_package.id.clone());
 
             self.activate_creem_subscription(plan, transaction_id)?;
         }
@@ -415,7 +624,7 @@ impl Subscription {
     }
 
     /// 激活 Creem 订阅
-    pub fn activate_creem_subscription(&mut self, plan: SubscriptionPlan, transaction_id: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn activate_creem_subscription(&mut self, plan: SubscriptionPlan, transaction_id: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let now = Utc::now();
 
         match plan {
@@ -435,7 +644,7 @@ impl Subscription {
     }
 
     /// 设置 webhook 服务器 URL
-    pub fn set_webhook_server_url(&mut self, url: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn set_webhook_server_url(&mut self, url: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.webhook_server_url = url;
         self.save()?;
         Ok(())

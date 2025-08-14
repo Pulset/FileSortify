@@ -52,7 +52,7 @@ function App() {
 
           // 初始化数据
           await Promise.all([loadConfig(), loadPaths()]);
-
+          tauriAPI.canUseAppSecure();
           // 设置事件监听器
           tauriAPI.listen('organize-files', () => {
             handleBatchOrganizeFiles();
@@ -115,8 +115,8 @@ function App() {
     // 计算监控路径数量
     const monitoringPathsCount = stats.pathStats
       ? Object.values(stats.pathStats).filter(
-          (pathStat) => pathStat.monitoringSince !== null
-        ).length
+        (pathStat) => pathStat.monitoringSince !== null
+      ).length
       : 0;
     addLog(`📊 当前监控状态: ${monitoringPathsCount} 个路径正在监控`, 'info');
   };
@@ -130,8 +130,8 @@ function App() {
             isMonitoring={
               stats.pathStats
                 ? Object.values(stats.pathStats).some(
-                    (pathStat) => pathStat.monitoringSince !== null
-                  )
+                  (pathStat) => pathStat.monitoringSince !== null
+                )
                 : false
             }
             onOrganizeFiles={handleOrganizeFiles}
@@ -159,9 +159,9 @@ function App() {
         <Sidebar currentView={currentView} onViewChange={setCurrentView} />
         <main className='main-content'>{renderCurrentView()}</main>
       </div>
-      <UpdateDialog 
-        isOpen={showUpdateDialog} 
-        onClose={() => setShowUpdateDialog(false)} 
+      <UpdateDialog
+        isOpen={showUpdateDialog}
+        onClose={() => setShowUpdateDialog(false)}
       />
     </div>
   );

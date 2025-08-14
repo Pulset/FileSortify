@@ -119,6 +119,13 @@ export class TauriAPI {
     return this.invoke('can_use_app');
   }
 
+  async canUseAppSecure(): Promise<boolean> {
+    if (!this.initialized) {
+      return false;
+    }
+    return this.invoke('can_use_app_secure');
+  }
+
   async getConfig(): Promise<Config> {
     if (!this.initialized) {
       // Return default config for web mode
