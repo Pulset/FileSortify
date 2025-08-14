@@ -32,14 +32,18 @@ interface PackagesResponse {
     packages: PackageInfo;
 }
 
-const CreemSubscriptionView: React.FC = () => {
+interface CreemSubscriptionViewProps {
+    onPaymentSuccess?: () => void;
+}
+
+const CreemSubscriptionView: React.FC<CreemSubscriptionViewProps> = ({ onPaymentSuccess }) => {
     const [packages, setPackages] = useState<PackageInfo | null>(null);
     const [currentSession, setCurrentSession] = useState<string | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<CreemPaymentStatus | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isPolling, setIsPolling] = useState(false);
-    const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
-    const [pollTimeout, setPollTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [pollInterval, setPollInterval] = useState<number | null>(null);
+    const [pollTimeout, setPollTimeout] = useState<number | null>(null);
 
     useEffect(() => {
         loadCurrentSession();
@@ -117,9 +121,8 @@ const CreemSubscriptionView: React.FC = () => {
                         setIsPolling(false);
 
                         if (userPackage.status === 'PAID') {
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 2000);
+                            // 支付成功后调用父组件的回调函数来刷新订阅状态
+                            onPaymentSuccess?.();
                         }
                     }
                 }

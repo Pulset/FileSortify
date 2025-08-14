@@ -81,7 +81,7 @@ const SubscriptionView: React.FC = () => {
           <div className='subscription-status'>❌ 试用已结束</div>
           <div className='subscription-details'>请购买完整版以继续使用</div>
         </div>
-        <CreemSubscriptionView />
+        <CreemSubscriptionView onPaymentSuccess={loadSubscriptionStatus} />
       </>
 
     );

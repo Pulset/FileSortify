@@ -55,7 +55,7 @@ impl Subscription {
             auto_renew_enabled: false,
             creem_session_id: None,
             creem_transaction_id: None,
-            webhook_server_url: "https://creem-payment-service.vercel.app".to_string(),
+            webhook_server_url: "https://filesortify.picasso-designs.com".to_string(),
             package_id: "cme9f2aum0000uph23ghk00sd".to_string(),
         }
     }
