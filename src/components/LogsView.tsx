@@ -1,17 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { useLoggerStore } from '../stores';
 
 const LogsView: React.FC = () => {
   const { logs, clearLogs } = useLoggerStore();
   const logsEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [logs]);
 
   const getLogTypeClass = (type?: string) => {
     switch (type) {
@@ -49,7 +41,7 @@ const LogsView: React.FC = () => {
           </button>
         </div>
         <div className='logs-terminal'>
-          {logs.reverse().map((log) => (
+          {logs.map((log) => (
             <div
               key={log.id}
               className={`log-entry ${getLogTypeClass(log.type)}`}

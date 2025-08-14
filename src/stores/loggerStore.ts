@@ -4,7 +4,7 @@ import { LogEntry } from '../types';
 
 interface LoggerState {
   logs: LogEntry[];
-  
+
   // Actions
   addLog: (message: string, type?: LogEntry['type']) => void;
   clearLogs: () => void;
@@ -23,7 +23,7 @@ export const useLoggerStore = create<LoggerState>()(
           message,
           type
         };
-        
+
         set(state => ({
           logs: [newLog, ...state.logs].slice(0, 1000) // Keep only last 1000 logs
         }));
@@ -42,7 +42,7 @@ export const useLoggerStore = create<LoggerState>()(
       name: 'logger-storage',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        logs: state.logs.slice(0, 100), // 只保存最近100条日志到持久化存储
+        logs: state.logs.slice(0, 1000), // 只保存最近100条日志到持久化存储
       }),
     }
   )
