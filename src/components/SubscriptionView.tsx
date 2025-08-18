@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SubscriptionStatus } from '../types';
 import { tauriAPI } from '../utils/tauri';
 import { useLoggerStore } from '../stores';
+import { useI18n } from '../contexts/I18nContext';
 import CreemSubscriptionView from './CreemSubscriptionView';
 
 const SubscriptionView: React.FC = () => {
@@ -10,6 +11,7 @@ const SubscriptionView: React.FC = () => {
   );
   const [loading, setLoading] = useState(true);
   const { addLog } = useLoggerStore();
+  const { t } = useI18n();
 
   useEffect(() => {
     loadSubscriptionStatus();
@@ -24,7 +26,7 @@ const SubscriptionView: React.FC = () => {
         setSubscription(status);
       }
     } catch (error: any) {
-      addLog(`❌ 加载订阅状态失败: ${error?.message}`, 'error');
+      addLog(`❌ ${t('messages.loadingSubscriptionFailed')}: ${error?.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -50,13 +52,13 @@ const SubscriptionView: React.FC = () => {
 
       return (
         <div className='subscription-card trial mb-6'>
-          <div className='subscription-status'>🎁 试用期</div>
+          <div className='subscription-status'>🎁 {t('subscription.trialStatus')}</div>
           <div className='subscription-details'>
-            剩余 {daysRemaining} 天试用时间
+            {t('subscription.trialRemaining', { days: daysRemaining })}
           </div>
           {daysRemaining <= 1 && (
             <div className='trial-warning mt-2'>
-              ⚠️ 试用期即将结束，请及时购买以继续使用所有功能
+              ⚠️ {t('subscription.trialWarning')}
             </div>
           )}
         </div>
@@ -66,9 +68,9 @@ const SubscriptionView: React.FC = () => {
     if (subscription.status === 'Active') {
       return (
         <div className='subscription-card active mb-6'>
-          <div className='subscription-status'>✨ 已购买</div>
+          <div className='subscription-status'>✨ {t('subscription.activeStatus')}</div>
           <div className='subscription-details'>
-            感谢您购买 FileSortify！现在可以无限制使用所有功能。
+            {t('subscription.thankYouMessage')}
           </div>
         </div>
       );

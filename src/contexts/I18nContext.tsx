@@ -1,193 +1,123 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Import translation files directly
-import zhTranslations from '../locales/zh.json';
-import enTranslations from '../locales/en.json';
+// 支持的语言类型
+export type Language = 'en' | 'zh';
 
-// Supported languages
-export type Language = 'zh' | 'en';
-
-// Translation function type
-export type TranslationFunction = (
-  key: string,
-  params?: Record<string, string>
-) => string;
-
-// Context interface
+// 国际化上下文类型
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: TranslationFunction;
-  isLoading: boolean;
+  t: (key: string, params?: Record<string, any>) => string;
 }
 
-// Create context
+// 创建上下文
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-// Translation storage
-let translations: Record<Language, Record<string, any>> = {
-  zh: {},
+// 语言资源
+const translations: Record<Language, any> = {
   en: {},
+  zh: {}
 };
 
-// Helper function to get nested value from object using dot notation
-function getNestedValue(obj: any, path: string): string | undefined {
-  return path.split('.').reduce((current, key) => {
-    return current && current[key] !== undefined ? current[key] : undefined;
-  }, obj);
-}
-
-// Helper function to interpolate parameters in translation strings
-function interpolateParams(
-  text: string,
-  params?: Record<string, string>
-): string {
-  if (!params) return text;
-
-  return Object.entries(params).reduce((result, [key, value]) => {
-    return result.replace(new RegExp(`{{${key}}}`, 'g'), value);
-  }, text);
-}
-
-// Load translation file
-async function loadTranslation(
-  language: Language
-): Promise<Record<string, any>> {
+// 加载语言资源
+const loadTranslations = async () => {
   try {
-    switch (language) {
-      case 'zh':
-        return zhTranslations;
-      case 'en':
-        return enTranslations;
-      default:
-        throw new Error(`Unsupported language: ${language}`);
-    }
-  } catch (error) {
-    console.error(`Error loading ${language} translations:`, error?.message);
-    // Return empty object as fallback
-    return {};
-  }
-}
+    const [enModule, zhModule] = await Promise.all([
+      import('../locales/en.json'),
+      import('../locales/zh.json')
+    ]);
 
-// Provider props
+    translations.en = enModule.default;
+    translations.zh = zhModule.default;
+  } catch (error) {
+    console.error('Failed to load translations:', error);
+  }
+};
+
+// 翻译函数
+const translate = (language: Language, key: string, params?: Record<string, any>): string => {
+  const keys = key.split('.');
+  let value: any = translations[language];
+
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k];
+    } else {
+      // 如果找不到翻译，返回key本身
+      return key;
+    }
+  }
+
+  if (typeof value !== 'string') {
+    return key;
+  }
+
+  // 处理参数替换
+  if (params) {
+    return value.replace(/\{\{(\w+)\}\}/g, (match, paramKey) => {
+      return params[paramKey] !== undefined ? String(params[paramKey]) : match;
+    });
+  }
+
+  return value;
+};
+
+// Provider组件
 interface I18nProviderProps {
   children: ReactNode;
 }
 
-// I18n Provider component
-export function I18nProvider({ children }: I18nProviderProps) {
-  const [language, setLanguageState] = useState<Language>('zh'); // Default to Chinese
-  const [isLoading, setIsLoading] = useState(true);
+export const I18nProvider: React.FC<I18nProviderProps> = ({ children }) => {
+  const [language, setLanguageState] = useState<Language>('en');
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load translations for a specific language
-  const loadLanguageTranslations = async (lang: Language) => {
-    setIsLoading(true);
-    try {
-      const translationData = await loadTranslation(lang);
-      translations[lang] = translationData;
-    } catch (error) {
-      console.error(`Failed to load translations for ${lang}:`, error?.message);
-      // Keep existing translations or empty object
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Initialize translations and load saved language preference
+  // 初始化语言设置
   useEffect(() => {
-    const initializeI18n = async () => {
-      // Load saved language preference from localStorage
-      const savedLanguage = localStorage.getItem(
-        'fileSortify_language'
-      ) as Language;
-      const initialLanguage =
-        savedLanguage && ['zh', 'en'].includes(savedLanguage)
-          ? savedLanguage
-          : 'zh';
+    const initializeLanguage = async () => {
+      await loadTranslations();
 
-      // Load translations for both languages (for fallback)
-      await Promise.all([
-        loadLanguageTranslations('zh'), // Always load Chinese as fallback
-        initialLanguage !== 'zh'
-          ? loadLanguageTranslations(initialLanguage)
-          : Promise.resolve(),
-      ]);
-
-      setLanguageState(initialLanguage);
-      setIsLoading(false);
-    };
-
-    initializeI18n();
-  }, []);
-
-  // Set language with persistence
-  const setLanguage = async (lang: Language) => {
-    if (lang === language) return;
-
-    setIsLoading(true);
-
-    try {
-      // Load translations for the new language if not already loaded
-      if (!translations[lang] || Object.keys(translations[lang]).length === 0) {
-        await loadLanguageTranslations(lang);
+      // 从localStorage读取保存的语言设置
+      const savedLanguage = localStorage.getItem('app-language') as Language;
+      if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'zh')) {
+        setLanguageState(savedLanguage);
+      } else {
+        // 默认使用英文
+        setLanguageState('en');
       }
 
-      // Update state and persist to localStorage
-      setLanguageState(lang);
-      localStorage.setItem('fileSortify_language', lang);
-    } catch (error) {
-      console.error(`Failed to switch to language ${lang}:`, error?.message);
-    } finally {
-      setIsLoading(false);
-    }
+      setIsLoaded(true);
+    };
+
+    initializeLanguage();
+  }, []);
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('app-language', lang);
   };
 
-  // Translation function
-  const t: TranslationFunction = (
-    key: string,
-    params?: Record<string, string>
-  ) => {
-    // Get translation from current language
-    let translation = getNestedValue(translations[language], key);
-
-    // Fallback to Chinese if translation not found and current language is not Chinese
-    if (translation === undefined && language !== 'zh') {
-      translation = getNestedValue(translations.zh, key);
-    }
-
-    // Final fallback: return the key itself
-    if (translation === undefined) {
-      console.warn(`Translation missing for key: ${key}`);
-      return key;
-    }
-
-    // Handle parameter interpolation
-    return interpolateParams(translation, params);
+  const t = (key: string, params?: Record<string, any>) => {
+    if (!isLoaded) return key;
+    return translate(language, key, params);
   };
 
-  const contextValue: I18nContextType = {
-    language,
-    setLanguage,
-    t,
-    isLoading,
-  };
+  // 在语言资源加载完成前显示loading
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <I18nContext.Provider value={contextValue}>{children}</I18nContext.Provider>
+    <I18nContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </I18nContext.Provider>
   );
-}
+};
 
-// Custom hook to use I18n context
-export function useI18n(): I18nContextType {
+// Hook
+export const useI18n = () => {
   const context = useContext(I18nContext);
   if (context === undefined) {
     throw new Error('useI18n must be used within an I18nProvider');
   }
   return context;
-}
+};

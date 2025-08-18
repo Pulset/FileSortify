@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ask, message } from '@tauri-apps/plugin-dialog';
 import { Config, RulesTabType } from '../types';
 import { useConfigStore, useLoggerStore } from '../stores';
+import { useI18n } from '../contexts/I18nContext';
 
 interface RulesViewProps {
   config: Config;
@@ -12,6 +13,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
   const [activeTab, setActiveTab] = useState<RulesTabType>('view-rules');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryExtensions, setNewCategoryExtensions] = useState('');
+  const { t } = useI18n();
 
   const {
     addCategory,
@@ -27,8 +29,8 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
-      await message('请输入分类名称', {
-        title: '提示',
+      await message(t('errors.categoryNameRequired'), {
+        title: t('common.error'),
         kind: 'warning',
       });
       return;
@@ -41,23 +43,22 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
 
       await addCategory(newCategoryName.trim(), extensions);
       addLog(
-        `✅ 成功添加分类: ${newCategoryName.trim()}，包含 ${extensions.length
-        } 个扩展名`
+        `✅ ${t('messages.categoryAdded', { name: newCategoryName.trim(), count: extensions.length })}`
       );
       setNewCategoryName('');
       setNewCategoryExtensions('');
     } catch (error) {
-      addLog(`❌ 添加分类失败: ${error?.message}`, 'error');
-      await message(error instanceof Error ? error.message : '添加分类失败', {
-        title: '错误',
+      addLog(`❌ ${t('errors.addCategoryFailed')}: ${error?.message}`, 'error');
+      await message(error instanceof Error ? error.message : t('errors.addCategoryFailed'), {
+        title: t('common.error'),
         kind: 'error',
       });
     }
   };
 
   const handleDeleteCategory = async (categoryName: string) => {
-    const confirmed = await ask(`确定要删除分类 "${categoryName}" 吗？`, {
-      title: '确认删除',
+    const confirmed = await ask(t('alerts.deleteCategoryConfirm', { category: categoryName }), {
+      title: t('common.confirm'),
       kind: 'warning',
     });
 
@@ -67,11 +68,11 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
 
     try {
       await deleteCategory(categoryName);
-      addLog(`✅ 成功删除分类: ${categoryName}`);
+      addLog(`✅ ${t('messages.categoryDeleted', { name: categoryName })}`);
     } catch (error) {
-      addLog(`❌ 删除分类失败: ${error?.message}`, 'error');
-      await message(error instanceof Error ? error.message : '删除分类失败', {
-        title: '错误',
+      addLog(`❌ ${t('errors.deleteCategoryFailed')}: ${error?.message}`, 'error');
+      await message(error instanceof Error ? error.message : t('errors.deleteCategoryFailed'), {
+        title: t('common.error'),
         kind: 'error',
       });
     }
@@ -82,8 +83,8 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
     const extension = input?.value.trim();
 
     if (!extension) {
-      await message('请输入扩展名', {
-        title: '提示',
+      await message(t('errors.extensionRequired'), {
+        title: t('common.error'),
         kind: 'warning',
       });
       return;
@@ -93,8 +94,8 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
       await addExtension(categoryName, extension);
       if (input) input.value = '';
     } catch (error) {
-      await message(error instanceof Error ? error.message : '添加扩展名失败', {
-        title: '错误',
+      await message(error instanceof Error ? error.message : t('errors.addExtensionFailed'), {
+        title: t('common.error'),
         kind: 'error',
       });
     }

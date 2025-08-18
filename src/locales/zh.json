@@ -4,7 +4,8 @@
     "organize": "文件整理",
     "rules": "分类规则",
     "logs": "活动日志",
-    "subscription": "订阅"
+    "subscription": "订阅",
+    "settings": "设置"
   },
   "dashboard": {
     "title": "概览",
@@ -29,12 +30,39 @@
   },
   "organize": {
     "title": "文件整理",
-    "description": "配置文件夹路径和整理选项",
+    "description": "管理多个文件夹路径，每个路径都可以独立整理和监控",
     "folderPath": "文件夹路径",
     "selectFolder": "选择文件夹",
     "folderPlaceholder": "请选择要整理的文件夹",
     "startOrganizing": "开始整理文件",
-    "hint": "未匹配的文件将保持在原地，不会被移动"
+    "hint": "未匹配的文件将保持在原地，不会被移动",
+    "addNewPath": "添加新路径",
+    "addFolderPath": "添加文件夹路径",
+    "pathName": "路径名称（可选）",
+    "configuredPaths": "已配置的路径",
+    "noPathsConfigured": "暂无配置的路径",
+    "clickToAddPath": "点击上方\"添加文件夹路径\"开始配置",
+    "editName": "编辑名称",
+    "monitoring": "监控中",
+    "stopped": "已停止",
+    "filesOrganized": "已整理文件",
+    "lastOrganized": "最后整理",
+    "neverOrganized": "从未整理",
+    "monitoringStarted": "监控开始",
+    "organizeFiles": "整理文件",
+    "startMonitoring": "开始监控",
+    "stopMonitoring": "停止监控",
+    "pathAdded": "已添加路径: {{name}} ({{path}})",
+    "newPath": "新路径",
+    "pathDeleted": "已删除路径: {{name}}",
+    "pathNameUpdated": "已更新路径名称: {{name}}",
+    "monitoringStartedFor": "开始监控: {{name}}",
+    "monitoringStopped": "停止监控: {{name}}",
+    "organizingFiles": "开始整理文件: {{name}}...",
+    "filesOrganizedCount": "{{name}}: 整理了 {{count}} 个文件",
+    "organizationFailed": "整理失败 ({{name}}): {{error}}",
+    "confirmDeletePath": "确定要删除路径 \"{{name}}\" 吗？",
+    "confirmDelete": "确认删除"
   },
   "rules": {
     "title": "分类规则",
@@ -87,7 +115,23 @@
       "techSupport": "技术支持",
       "prioritySupport": "优先技术支持",
       "earlyAccess": "未来功能抢先体验"
-    }
+    },
+    "thankYouMessage": "感谢您购买 FileSortify！现在可以无限制使用所有功能。"
+  },
+  "creemSubscription": {
+    "title": "FileSortify 买断版",
+    "subtitle": "一次购买，永久使用",
+    "paymentStatus": "支付状态",
+    "paymentSuccess": "支付成功",
+    "paymentFailed": "支付失败",
+    "sessionExpired": "会话过期",
+    "pendingPayment": "等待支付",
+    "unknownStatus": "未知状态",
+    "checkingPayment": "检查支付状态中...",
+    "processing": "处理中...",
+    "purchaseNow": "立即购买",
+    "purchaseFailed": "购买失败",
+    "paymentSuccessAmount": "支付成功！金额: ${{amount}}"
   },
   "common": {
     "loading": "加载中...",
@@ -120,7 +164,9 @@
     "loadingSubscriptionFailed": "加载订阅状态失败",
     "subscriptionLoadFailed": "加载订阅信息失败",
     "monthlySubscription": "月度",
-    "yearlySubscription": "年度"
+    "yearlySubscription": "年度",
+    "categoryAdded": "成功添加分类: {{name}}，包含 {{count}} 个扩展名",
+    "categoryDeleted": "成功删除分类: {{name}}"
   },
   "errors": {
     "selectFolderFirst": "请先选择文件夹",
@@ -138,7 +184,8 @@
     "resetConfigFailed": "重置配置失败",
     "subscriptionStartFailed": "启动订阅失败",
     "restorePurchasesFailed": "恢复购买失败",
-    "cancelSubscriptionFailed": "取消订阅失败"
+    "cancelSubscriptionFailed": "取消订阅失败",
+    "loadConfigFailed": "加载配置失败"
   },
   "alerts": {
     "deleteCategoryConfirm": "确定要删除分类 \"{{category}}\" 吗？",
@@ -148,7 +195,7 @@
   },
   "categories": {
     "图片": "图片",
-    "视频": "视频", 
+    "视频": "视频",
     "音频": "音频",
     "文档": "文档",
     "表格": "表格",
@@ -158,5 +205,58 @@
     "代码": "代码",
     "字体": "字体",
     "其他": "其他"
+  },
+  "updateDialog": {
+    "title": "更新可用",
+    "newVersion": "发现新版本",
+    "currentVersion": "当前版本",
+    "releaseNotes": "更新说明",
+    "updateNow": "立即更新",
+    "skipVersion": "跳过此版本",
+    "remindLater": "稍后提醒",
+    "downloading": "下载中...",
+    "installing": "安装中...",
+    "updateFailed": "更新失败",
+    "updateComplete": "更新完成",
+    "restartRequired": "需要重启"
+  },
+  "settings": {
+    "title": "设置",
+    "description": "配置应用程序首选项和选项",
+    "general": {
+      "title": "通用设置",
+      "language": "语言",
+      "languageDesc": "选择您的首选语言",
+      "autoStart": "开机自启",
+      "autoStartDesc": "系统启动时自动启动应用程序",
+      "theme": "主题",
+      "themeDesc": "选择应用程序主题",
+      "themes": {
+        "light": "浅色",
+        "dark": "深色",
+        "system": "跟随系统"
+      }
+    },
+    "notifications": {
+      "title": "通知",
+      "enabled": "启用通知",
+      "enabledDesc": "为文件整理事件显示通知",
+      "sound": "通知声音",
+      "soundDesc": "通知时播放声音"
+    },
+    "advanced": {
+      "title": "高级设置",
+      "logLevel": "日志级别",
+      "logLevelDesc": "设置应用程序日志的详细程度",
+      "logLevels": {
+        "error": "错误",
+        "warn": "警告",
+        "info": "信息",
+        "debug": "调试"
+      },
+      "resetSettings": "重置设置",
+      "resetSettingsDesc": "将所有设置重置为默认值",
+      "resetConfirm": "确定要将所有设置重置为默认值吗？此操作无法撤销。"
+    }
   }
 }

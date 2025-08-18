@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stats } from '../types';
+import { useI18n } from '../contexts/I18nContext';
 
 interface DashboardProps {
   stats: Stats;
@@ -14,6 +15,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   onOrganizeFiles,
   onToggleMonitoring,
 }) => {
+  const { t } = useI18n();
+
   // 计算监控路径数量
   const monitoringPathsCount = stats.pathStats
     ? Object.values(stats.pathStats).filter(pathStat => pathStat.monitoringSince !== null).length
@@ -24,8 +27,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   return (
     <div className='view active'>
       <div className='view-header'>
-        <h1>概览</h1>
-        <p>文件整理状态和快速操作</p>
+        <h1>{t('dashboard.title')}</h1>
+        <p>{t('dashboard.description')}</p>
       </div>
 
       <div className='dashboard-grid'>
@@ -37,7 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className='stat-content'>
             <div className='stat-number'>{stats.filesOrganized}</div>
-            <div className='stat-label'>已整理文件</div>
+            <div className='stat-label'>{t('dashboard.stats.filesOrganized')}</div>
           </div>
         </div>
 
@@ -49,8 +52,8 @@ const Dashboard: React.FC<DashboardProps> = ({
             </svg>
           </div>
           <div className='stat-content'>
-            <div className='stat-number'>{stats.lastOrganized || '未开始'}</div>
-            <div className='stat-label'>最后整理时间</div>
+            <div className='stat-number'>{stats.lastOrganized || t('dashboard.stats.notStarted')}</div>
+            <div className='stat-label'>{t('dashboard.stats.lastOrganized')}</div>
           </div>
         </div>
 
@@ -62,9 +65,9 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className='stat-content'>
             <div className='stat-number'>
-              {monitoringPathsCount > 0 ? `${monitoringPathsCount} 个路径监控中` : '已停止'}
+              {monitoringPathsCount > 0 ? t('dashboard.stats.monitoring') : t('dashboard.stats.stopped')}
             </div>
-            <div className='stat-label'>监控状态</div>
+            <div className='stat-label'>{t('dashboard.stats.monitoringStatus')}</div>
           </div>
         </div>
 
@@ -77,13 +80,13 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className='stat-content'>
             <div className='stat-number'>{totalPathsCount}</div>
-            <div className='stat-label'>配置路径</div>
+            <div className='stat-label'>{t('organize.folderPath')}</div>
           </div>
         </div>
       </div>
 
       <div className='quick-actions'>
-        <div className='section-title'>快速操作</div>
+        <div className='section-title'>{t('dashboard.actions.quickActions')}</div>
         <div className='action-buttons'>
           <button className='action-btn' onClick={onOrganizeFiles}>
             <div className='btn-icon'>
@@ -97,10 +100,8 @@ const Dashboard: React.FC<DashboardProps> = ({
               </svg>
             </div>
             <div className='btn-text'>
-              <div className='btn-title'>整理文件</div>
-              <div className='btn-desc'>
-                {totalPathsCount > 0 ? `整理所有 ${totalPathsCount} 个路径` : '整理现有文件'}
-              </div>
+              <div className='btn-title'>{t('dashboard.actions.organizeFiles')}</div>
+              <div className='btn-desc'>{t('dashboard.actions.organizeFilesDesc')}</div>
             </div>
           </button>
 
@@ -117,14 +118,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
             <div className='btn-text'>
               <div className='btn-title'>
-                {isMonitoring ? `监控状态` : '开始监控'}
+                {isMonitoring ? t('dashboard.actions.stopMonitoring') : t('dashboard.actions.startMonitoring')}
               </div>
-              <div className='btn-desc'>
-                {isMonitoring
-                  ? `${monitoringPathsCount} 个路径正在监控`
-                  : '自动监控新文件'
-                }
-              </div>
+              <div className='btn-desc'>{t('dashboard.actions.autoMonitorDesc')}</div>
             </div>
           </button>
         </div>

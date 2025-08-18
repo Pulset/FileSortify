@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useI18n } from '../contexts/I18nContext';
 
 interface UpdateSchedulerConfig {
   enabled: boolean;
@@ -17,6 +18,7 @@ export const UpdateSettings: React.FC = () => {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     loadConfig();
@@ -34,7 +36,7 @@ export const UpdateSettings: React.FC = () => {
   const saveConfig = async () => {
     setIsSaving(true);
     setSaveMessage(null);
-    
+
     try {
       await invoke('update_scheduler_config', { config });
       setSaveMessage('设置已保存');
@@ -57,7 +59,7 @@ export const UpdateSettings: React.FC = () => {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold mb-4">更新设置</h3>
-      
+
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-gray-700">
@@ -131,7 +133,7 @@ export const UpdateSettings: React.FC = () => {
           >
             {isSaving ? '保存中...' : '保存设置'}
           </button>
-          
+
           {saveMessage && (
             <span className={`text-sm ${saveMessage.includes('失败') ? 'text-red-600' : 'text-green-600'}`}>
               {saveMessage}

@@ -4,7 +4,8 @@
     "organize": "Organize",
     "rules": "Rules",
     "logs": "Logs",
-    "subscription": "Subscription"
+    "subscription": "Subscription",
+    "settings": "Settings"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -34,7 +35,34 @@
     "selectFolder": "Select Folder",
     "folderPlaceholder": "Please select a folder to organize",
     "startOrganizing": "Start Organizing Files",
-    "hint": "Unmatched files will remain in place and won't be moved"
+    "hint": "Unmatched files will remain in place and won't be moved",
+    "addNewPath": "Add New Path",
+    "addFolderPath": "Add Folder Path",
+    "pathName": "Path Name (Optional)",
+    "configuredPaths": "Configured Paths",
+    "noPathsConfigured": "No paths configured",
+    "clickToAddPath": "Click 'Add Folder Path' above to start configuring",
+    "editName": "Edit Name",
+    "monitoring": "Monitoring",
+    "stopped": "Stopped",
+    "filesOrganized": "Files Organized",
+    "lastOrganized": "Last Organized",
+    "neverOrganized": "Never organized",
+    "monitoringStarted": "Monitoring Started",
+    "organizeFiles": "Organize Files",
+    "startMonitoring": "Start Monitoring",
+    "stopMonitoring": "Stop Monitoring",
+    "pathAdded": "Path added: {{name}} ({{path}})",
+    "newPath": "New Path",
+    "pathDeleted": "Path deleted: {{name}}",
+    "pathNameUpdated": "Path name updated: {{name}}",
+    "monitoringStartedFor": "Started monitoring: {{name}}",
+    "monitoringStopped": "Stopped monitoring: {{name}}",
+    "organizingFiles": "Organizing files: {{name}}...",
+    "filesOrganizedCount": "{{name}}: Organized {{count}} files",
+    "organizationFailed": "Organization failed ({{name}}): {{error}}",
+    "confirmDeletePath": "Are you sure you want to delete path \"{{name}}\"?",
+    "confirmDelete": "Confirm Delete"
   },
   "rules": {
     "title": "Classification Rules",
@@ -87,7 +115,23 @@
       "techSupport": "Technical support",
       "prioritySupport": "Priority technical support",
       "earlyAccess": "Early access to future features"
-    }
+    },
+    "thankYouMessage": "Thank you for purchasing FileSortify! You can now use all features without restrictions."
+  },
+  "creemSubscription": {
+    "title": "FileSortify Lifetime",
+    "subtitle": "One-time purchase, lifetime use",
+    "paymentStatus": "Payment Status",
+    "paymentSuccess": "Payment Successful",
+    "paymentFailed": "Payment Failed",
+    "sessionExpired": "Session Expired",
+    "pendingPayment": "Waiting for Payment",
+    "unknownStatus": "Unknown Status",
+    "checkingPayment": "Checking payment status...",
+    "processing": "Processing...",
+    "purchaseNow": "Purchase Now",
+    "purchaseFailed": "Purchase failed",
+    "paymentSuccessAmount": "Payment successful! Amount: ${{amount}}"
   },
   "common": {
     "loading": "Loading...",
@@ -120,7 +164,9 @@
     "loadingSubscriptionFailed": "Failed to load subscription status",
     "subscriptionLoadFailed": "Failed to load subscription information",
     "monthlySubscription": "monthly",
-    "yearlySubscription": "yearly"
+    "yearlySubscription": "yearly",
+    "categoryAdded": "Successfully added category: {{name}}, containing {{count}} extensions",
+    "categoryDeleted": "Successfully deleted category: {{name}}"
   },
   "errors": {
     "selectFolderFirst": "Please select a folder first",
@@ -138,7 +184,8 @@
     "resetConfigFailed": "Failed to reset configuration",
     "subscriptionStartFailed": "Failed to start subscription",
     "restorePurchasesFailed": "Failed to restore purchases",
-    "cancelSubscriptionFailed": "Failed to cancel subscription"
+    "cancelSubscriptionFailed": "Failed to cancel subscription",
+    "loadConfigFailed": "Failed to load configuration"
   },
   "alerts": {
     "deleteCategoryConfirm": "Are you sure you want to delete category \"{{category}}\"?",
@@ -158,5 +205,58 @@
     "代码": "Code",
     "字体": "Fonts",
     "其他": "Others"
+  },
+  "updateDialog": {
+    "title": "Update Available",
+    "newVersion": "New Version Available",
+    "currentVersion": "Current Version",
+    "releaseNotes": "Release Notes",
+    "updateNow": "Update Now",
+    "skipVersion": "Skip This Version",
+    "remindLater": "Remind Me Later",
+    "downloading": "Downloading...",
+    "installing": "Installing...",
+    "updateFailed": "Update Failed",
+    "updateComplete": "Update Complete",
+    "restartRequired": "Restart Required"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Configure application preferences and options",
+    "general": {
+      "title": "General Settings",
+      "language": "Language",
+      "languageDesc": "Select your preferred language",
+      "autoStart": "Auto Start",
+      "autoStartDesc": "Start application automatically when system boots",
+      "theme": "Theme",
+      "themeDesc": "Choose application theme",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "enabled": "Enable Notifications",
+      "enabledDesc": "Show notifications for file organization events",
+      "sound": "Notification Sound",
+      "soundDesc": "Play sound with notifications"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "logLevel": "Log Level",
+      "logLevelDesc": "Set the verbosity of application logs",
+      "logLevels": {
+        "error": "Error",
+        "warn": "Warning",
+        "info": "Info",
+        "debug": "Debug"
+      },
+      "resetSettings": "Reset Settings",
+      "resetSettingsDesc": "Reset all settings to default values",
+      "resetConfirm": "Are you sure you want to reset all settings to default? This action cannot be undone."
+    }
   }
 }

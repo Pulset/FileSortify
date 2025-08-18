@@ -1,9 +1,11 @@
 import React, { useRef } from 'react';
 import { useLoggerStore } from '../stores';
+import { useI18n } from '../contexts/I18nContext';
 
 const LogsView: React.FC = () => {
   const { logs, clearLogs } = useLoggerStore();
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useI18n();
 
   const getLogTypeClass = (type?: string) => {
     switch (type) {
@@ -21,8 +23,8 @@ const LogsView: React.FC = () => {
   return (
     <div className='view active'>
       <div className='view-header'>
-        <h1>活动日志</h1>
-        <p>查看文件整理的详细记录</p>
+        <h1>{t('logs.title')}</h1>
+        <p>{t('logs.description')}</p>
       </div>
 
       <div className='logs-section'>
@@ -31,13 +33,13 @@ const LogsView: React.FC = () => {
             <svg width='16' height='16' viewBox='0 0 24 24' fill='currentColor'>
               <path d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z' />
             </svg>
-            实时日志
+            {t('logs.realTimeLogs')}
           </div>
           <button className='clear-logs-btn btn secondary' onClick={clearLogs}>
             <svg width='14' height='14' viewBox='0 0 24 24' fill='currentColor'>
               <path d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
             </svg>
-            清空日志
+            {t('logs.clearLogs')}
           </button>
         </div>
         <div className='logs-terminal'>

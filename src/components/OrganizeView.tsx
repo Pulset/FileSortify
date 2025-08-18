@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ask, message } from '@tauri-apps/plugin-dialog';
 import { usePathsStore, useLoggerStore } from '../stores';
 import { tauriAPI } from '../utils/tauri';
+import { useI18n } from '../contexts/I18nContext';
 
 interface OrganizeViewProps {
   // 保持接口兼容性，但这些参数将不再使用
@@ -25,6 +26,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
   } = usePathsStore();
 
   const { addLog } = useLoggerStore();
+  const { t } = useI18n();
 
   const [newPathInput, setNewPathInput] = useState('');
   const [newPathName, setNewPathName] = useState('');
@@ -45,8 +47,8 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
   const handleAddPath = async () => {
     if (!newPathInput.trim()) {
-      await message('请先选择文件夹路径', {
-        title: '提示',
+      await message(t('errors.selectFolderFirst'), {
+        title: t('common.error'),
         kind: 'warning',
       });
       return;
@@ -54,15 +56,15 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
     try {
       await addPath(newPathInput, newPathName || undefined);
-      addLog(`✅ 已添加路径: ${newPathName || '新路径'} (${newPathInput})`);
+      addLog(`✅ ${t('organize.pathAdded', { name: newPathName || t('organize.newPath'), path: newPathInput })}`);
       setNewPathInput('');
       setNewPathName('');
       setShowAddForm(false);
     } catch (error) {
       const msg = error instanceof Error ? error.message : error
-      addLog(`❌ 添加路径失败: ${msg}`, 'error');
-      await message(`添加路径失败: ${msg}`, {
-        title: '错误',
+      addLog(`❌ ${t('errors.addCategoryFailed')}: ${msg}`, 'error');
+      await message(`${t('errors.addCategoryFailed')}: ${msg}`, {
+        title: t('common.error'),
         kind: 'error',
       });
     }
@@ -72,20 +74,20 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     const path = paths.find((p) => p.id === pathId);
     if (!path) return;
 
-    const confirmed = await ask(`确定要删除路径 "${path.name}" 吗？`, {
-      title: '确认删除',
+    const confirmed = await ask(t('organize.confirmDeletePath', { name: path.name }), {
+      title: t('organize.confirmDelete'),
       kind: 'warning',
     });
 
     if (confirmed) {
       try {
         await removePath(pathId);
-        addLog(`✅ 已删除路径: ${path.name}`);
+        addLog(`✅ ${t('organize.pathDeleted', { name: path.name })}`);
       } catch (error) {
         const msg = error instanceof Error ? error.message : error
-        addLog(`❌ 删除路径失败: ${msg}`, 'error');
-        await message(`删除路径失败: ${msg}`, {
-          title: '错误',
+        addLog(`❌ ${t('errors.deleteCategoryFailed')}: ${msg}`, 'error');
+        await message(`${t('errors.deleteCategoryFailed')}: ${msg}`, {
+          title: t('common.error'),
           kind: 'error',
         });
       }
@@ -102,14 +104,14 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
     try {
       await updatePath(editingPath, { name: editName.trim() });
-      addLog(`✅ 已更新路径名称: ${editName.trim()}`);
+      addLog(`✅ ${t('organize.pathNameUpdated', { name: editName.trim() })}`);
       setEditingPath(null);
       setEditName('');
     } catch (error) {
       const msg = error instanceof Error ? error.message : error
-      addLog(`❌ 更新路径名称失败: ${msg}`, 'error');
-      await message(`更新路径名称失败: ${msg}`, {
-        title: '错误',
+      addLog(`❌ ${t('errors.addExtensionFailed')}: ${msg}`, 'error');
+      await message(`${t('errors.addExtensionFailed')}: ${msg}`, {
+        title: t('common.error'),
         kind: 'error',
       });
     }
@@ -127,15 +129,15 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     try {
       const newState = await togglePathMonitoring(pathId);
       if (newState) {
-        addLog(`🔍 开始监控: ${path.name}`, 'success');
+        addLog(`🔍 ${t('organize.monitoringStartedFor', { name: path.name })}`, 'success');
       } else {
-        addLog(`⏹️ 停止监控: ${path.name}`, 'info');
+        addLog(`⏹️ ${t('organize.monitoringStopped', { name: path.name })}`, 'info');
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : error
-      addLog(`❌ 切换监控状态失败: ${msg}`, 'error');
-      await message(`切换监控状态失败: ${msg}`, {
-        title: '错误',
+      addLog(`❌ ${t('errors.monitoringToggleFailed')}: ${msg}`, 'error');
+      await message(`${t('errors.monitoringToggleFailed')}: ${msg}`, {
+        title: t('common.error'),
         kind: 'error',
       });
     }
@@ -146,14 +148,14 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     if (!path) return;
 
     try {
-      addLog(`🔄 开始整理文件: ${path.name}...`, 'info');
+      addLog(`🔄 ${t('organize.organizingFiles', { name: path.name })}`, 'info');
       const fileCount = await organizePathFiles(pathId);
-      addLog(`✅ ${path.name}: 整理了 ${fileCount} 个文件`, 'success');
+      addLog(`✅ ${t('organize.filesOrganizedCount', { name: path.name, count: fileCount })}`, 'success');
     } catch (error) {
       const msg = error instanceof Error ? error.message : error
-      addLog(`❌ 整理失败 (${path.name}): ${msg}`, 'error');
-      await message(`整理文件失败: ${msg}`, {
-        title: '错误',
+      addLog(`❌ ${t('organize.organizationFailed', { name: path.name, error: msg })}`, 'error');
+      await message(`${t('errors.organizationFailed')}: ${msg}`, {
+        title: t('common.error'),
         kind: 'error',
       });
     }
@@ -164,7 +166,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       <div className='view active'>
         <div className='loading'>
           <div className='spinner'></div>
-          加载路径配置中...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -174,15 +176,15 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
   return (
     <div className='view active'>
       <div className='view-header'>
-        <h1>文件整理</h1>
-        <p>管理多个文件夹路径，每个路径都可以独立整理和监控</p>
+        <h1>{t('organize.title')}</h1>
+        <p>{t('organize.description')}</p>
       </div>
 
       {/* 添加新路径区域 */}
       <div className='settings-section'>
         <div className='setting-card'>
           <div className='setting-header'>
-            <div className='setting-title'>添加新路径</div>
+            <div className='setting-title'>{t('organize.addNewPath')}</div>
           </div>
           <div className='setting-content'>
             {!showAddForm ? (
@@ -195,7 +197,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                 >
                   <path d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
                 </svg>
-                添加文件夹路径
+                {t('organize.addFolderPath')}
               </button>
             ) : (
               <div className='add-path-form'>
@@ -205,7 +207,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     value={newPathInput}
                     onChange={(e) => setNewPathInput(e.target.value)}
                     className='path-input form-input'
-                    placeholder='文件夹路径'
+                    placeholder={t('organize.folderPath')}
                   />
                   <button
                     className='select-btn btn secondary'
@@ -219,7 +221,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     >
                       <path d='M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z' />
                     </svg>
-                    选择文件夹
+                    {t('organize.selectFolder')}
                   </button>
                 </div>
                 <div style={{ marginTop: '12px' }}>
@@ -228,7 +230,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     value={newPathName}
                     onChange={(e) => setNewPathName(e.target.value)}
                     className='form-input'
-                    placeholder='路径名称（可选）'
+                    placeholder={t('organize.pathName')}
                   />
                 </div>
                 <div className='action-section' style={{ marginTop: '16px' }}>
@@ -241,7 +243,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     >
                       <path d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' />
                     </svg>
-                    添加
+                    {t('common.add')}
                   </button>
                   <button
                     className='btn secondary'
@@ -251,7 +253,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                       setNewPathName('');
                     }}
                   >
-                    取消
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -262,7 +264,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
       {/* 路径列表 */}
       <div className='settings-section'>
-        <div className='section-title'>已配置的路径 ({paths.length})</div>
+        <div className='section-title'>{t('organize.configuredPaths')} ({paths.length})</div>
 
         {paths.length === 0 ? (
           <div className='setting-card'>
@@ -278,9 +280,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
               >
                 <path d='M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z' />
               </svg>
-              <p>暂无配置的路径</p>
+              <p>{t('organize.noPathsConfigured')}</p>
               <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                点击上方"添加文件夹路径"开始配置
+                {t('organize.clickToAddPath')}
               </p>
             </div>
           </div>
@@ -305,14 +307,14 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                             style={{ fontSize: '12px', padding: '4px 8px' }}
                             onClick={handleSaveEdit}
                           >
-                            保存
+                            {t('common.save')}
                           </button>
                           <button
                             className='btn secondary'
                             style={{ fontSize: '12px', padding: '4px 8px' }}
                             onClick={handleCancelEdit}
                           >
-                            取消
+                            {t('common.cancel')}
                           </button>
                         </div>
                       </div>
@@ -322,7 +324,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                         <button
                           className='edit-name-btn'
                           onClick={() => handleEditName(path.id, path.name)}
-                          title='编辑名称'
+                          title={t('organize.editName')}
                         >
                           <svg
                             width='14'
@@ -341,7 +343,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                       className={`status-badge ${path.isMonitoring ? 'monitoring' : 'stopped'
                         }`}
                     >
-                      {path.isMonitoring ? '监控中' : '已停止'}
+                      {path.isMonitoring ? t('organize.monitoring') : t('organize.stopped')}
                     </span>
                   </div>
                 </div>
@@ -354,20 +356,20 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
                 <div className='path-stats'>
                   <div className='stat-item'>
-                    <span className='stat-label'>已整理文件:</span>
+                    <span className='stat-label'>{t('organize.filesOrganized')}:</span>
                     <span className='stat-value'>
                       {path.stats.filesOrganized}
                     </span>
                   </div>
                   <div className='stat-item'>
-                    <span className='stat-label'>最后整理:</span>
+                    <span className='stat-label'>{t('organize.lastOrganized')}:</span>
                     <span className='stat-value'>
-                      {path.stats.lastOrganized || '从未整理'}
+                      {path.stats.lastOrganized || t('organize.neverOrganized')}
                     </span>
                   </div>
                   {path.stats.monitoringSince && (
                     <div className='stat-item'>
-                      <span className='stat-label'>监控开始:</span>
+                      <span className='stat-label'>{t('organize.monitoringStarted')}:</span>
                       <span className='stat-value'>
                         {path.stats.monitoringSince}
                       </span>
@@ -388,7 +390,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     >
                       <path d='M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z' />
                     </svg>
-                    整理文件
+                    {t('organize.organizeFiles')}
                   </button>
 
                   <button
@@ -409,7 +411,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                         }
                       />
                     </svg>
-                    {path.isMonitoring ? '停止监控' : '开始监控'}
+                    {path.isMonitoring ? t('organize.stopMonitoring') : t('organize.startMonitoring')}
                   </button>
 
                   <button
@@ -424,7 +426,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                     >
                       <path d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
                     </svg>
-                    删除
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>

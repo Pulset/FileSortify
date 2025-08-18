@@ -8,6 +8,7 @@ import {
   useLoggerStore,
   useStatsStore,
 } from './stores';
+import { I18nProvider } from './contexts/I18nContext';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -154,16 +155,18 @@ function App() {
   };
 
   return (
-    <div className='app'>
-      <div className='app-container'>
-        <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-        <main className='main-content'>{renderCurrentView()}</main>
+    <I18nProvider>
+      <div className='app'>
+        <div className='app-container'>
+          <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+          <main className='main-content'>{renderCurrentView()}</main>
+        </div>
+        <UpdateDialog
+          isOpen={showUpdateDialog}
+          onClose={() => setShowUpdateDialog(false)}
+        />
       </div>
-      <UpdateDialog
-        isOpen={showUpdateDialog}
-        onClose={() => setShowUpdateDialog(false)}
-      />
-    </div>
+    </I18nProvider>
   );
 }
 
