@@ -15,7 +15,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   onToggleMonitoring,
 }) => {
   // 计算监控路径数量
-  const monitoringPathsCount = stats.pathStats 
+  const monitoringPathsCount = stats.pathStats
     ? Object.values(stats.pathStats).filter(pathStat => pathStat.monitoringSince !== null).length
     : 0;
 
@@ -70,7 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         {/* 新增路径统计卡片 */}
         <div className='stat-card'>
-          <div className='stat-icon' style={{background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)'}}>
+          <div className='stat-icon' style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
             <svg width='24' height='24' viewBox='0 0 24 24' fill='currentColor'>
               <path d='M20 6h-2v-.85C18 4.53 17.48 4 16.86 4H15.14C14.52 4 14 4.53 14 5.15V6H10v-.85C10 4.53 9.48 4 8.86 4H7.14C6.52 4 6 4.53 6 5.15V6H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z' />
             </svg>
@@ -120,8 +120,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 {isMonitoring ? `监控状态` : '开始监控'}
               </div>
               <div className='btn-desc'>
-                {isMonitoring 
-                  ? `${monitoringPathsCount} 个路径正在监控` 
+                {isMonitoring
+                  ? `${monitoringPathsCount} 个路径正在监控`
                   : '自动监控新文件'
                 }
               </div>
