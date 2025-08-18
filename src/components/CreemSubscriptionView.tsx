@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useSubscriptionStore } from '../stores';
 
 interface UserPackage {
     id: string;
@@ -28,26 +29,21 @@ interface PackageInfo {
     productId: string;
 }
 
-interface PackagesResponse {
-    packages: PackageInfo;
-}
-
 interface CreemSubscriptionViewProps {
     onPaymentSuccess?: () => void;
 }
 
 const CreemSubscriptionView: React.FC<CreemSubscriptionViewProps> = ({ onPaymentSuccess }) => {
-    const [packages, setPackages] = useState<PackageInfo | null>(null);
-    const [currentSession, setCurrentSession] = useState<string | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<CreemPaymentStatus | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isPolling, setIsPolling] = useState(false);
     const [pollInterval, setPollInterval] = useState<number | null>(null);
     const [pollTimeout, setPollTimeout] = useState<number | null>(null);
+    const { packages, getPackages, currentSession, getCurrentSession, setCurrentSession } = useSubscriptionStore()
 
     useEffect(() => {
-        loadCurrentSession();
-        loadPackagesFromServer();
+        getCurrentSession();
+        getPackages();
 
         // Cleanup timers when component unmounts
         return () => {
@@ -59,33 +55,6 @@ const CreemSubscriptionView: React.FC<CreemSubscriptionViewProps> = ({ onPayment
             }
         };
     }, [pollInterval, pollTimeout]);
-
-
-
-    const loadPackagesFromServer = async () => {
-        try {
-            const packagesInfo = await invoke<PackagesResponse>('fetch_packages_from_server');
-            setPackages(packagesInfo.packages);
-        } catch (error) {
-            console.error('Failed to load packages from server:', error);
-            // 如果服务端获取失败，回退到本地数据
-            try {
-                const localPackages = await invoke<PackagesResponse>('get_packages');
-                setPackages(localPackages.packages);
-            } catch (localError) {
-                console.error('Failed to load local packages:', localError);
-            }
-        }
-    };
-
-    const loadCurrentSession = async () => {
-        try {
-            const sessionId = await invoke<string | null>('get_current_session_info');
-            setCurrentSession(sessionId);
-        } catch (error) {
-            console.error('Failed to load current session:', error);
-        }
-    };
 
     const handlePurchase = async () => {
         setIsLoading(true);
@@ -167,7 +136,6 @@ const CreemSubscriptionView: React.FC<CreemSubscriptionViewProps> = ({ onPayment
         );
     }
 
-    console.log({ packages, currentSession })
     return (
         <div className="max-w-md mx-auto p-6">
             {/* 支付状态 */}
