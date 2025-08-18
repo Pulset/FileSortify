@@ -57,6 +57,11 @@ export interface LogEntry {
   type?: 'info' | 'success' | 'error' | 'warning';
 }
 
+export interface GeneralSettings {
+  auto_start: boolean;
+  theme: string;
+}
+
 export type ViewType =
   | 'dashboard'
   | 'organize'

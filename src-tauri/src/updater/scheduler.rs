@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime};
+use std::fs;
+use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
 use tokio::time;
 
@@ -9,6 +11,43 @@ pub struct UpdateSchedulerConfig {
     pub check_interval_hours: u64,
     pub auto_download: bool,
     pub auto_install: bool,
+}
+
+impl UpdateSchedulerConfig {
+    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+        let config_path = Self::get_config_path();
+        
+        if config_path.exists() {
+            let content = fs::read_to_string(&config_path)?;
+            let config: UpdateSchedulerConfig = serde_json::from_str(&content)?;
+            Ok(config)
+        } else {
+            let config = Self::default();
+            config.save()?;
+            Ok(config)
+        }
+    }
+    
+    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let config_path = Self::get_config_path();
+        
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        
+        let content = serde_json::to_string_pretty(self)?;
+        fs::write(&config_path, content)?;
+        
+        Ok(())
+    }
+    
+    fn get_config_path() -> PathBuf {
+        if let Some(config_dir) = dirs::config_dir() {
+            config_dir.join("fileSortify").join("update_scheduler.json")
+        } else {
+            PathBuf::from("update_scheduler_config.json")
+        }
+    }
 }
 
 impl Default for UpdateSchedulerConfig {
@@ -97,14 +136,26 @@ impl UpdateScheduler {
 }
 
 #[tauri::command]
-pub fn get_scheduler_config() -> UpdateSchedulerConfig {
-    // 这里可以从配置文件读取，暂时返回默认值
-    UpdateSchedulerConfig::default()
+pub fn get_scheduler_config() -> Result<UpdateSchedulerConfig, String> {
+    match UpdateSchedulerConfig::load() {
+        Ok(config) => Ok(config),
+        Err(e) => {
+            log::error!("Failed to load scheduler config: {}", e);
+            Ok(UpdateSchedulerConfig::default())
+        }
+    }
 }
 
 #[tauri::command]
-pub fn update_scheduler_config(config: UpdateSchedulerConfig) -> Result<(), String> {
-    // 这里可以保存配置到文件
-    log::info!("Update scheduler config updated: {:?}", config);
-    Ok(())
+pub fn update_scheduler_config(config: UpdateSchedulerConfig) -> Result<String, String> {
+    match config.save() {
+        Ok(_) => {
+            log::info!("Update scheduler config updated: {:?}", config);
+            Ok("更新调度器配置保存成功".to_string())
+        }
+        Err(e) => {
+            log::error!("Failed to save scheduler config: {}", e);
+            Err(format!("保存更新调度器配置失败: {}", e))
+        }
+    }
 }

@@ -9,6 +9,8 @@ mod config;
 mod subscription;
 mod apple_subscription;
 mod updater;
+mod settings;
+mod autostart;
 
 #[cfg(target_os = "macos")]
 mod storekit_bridge;
@@ -16,12 +18,15 @@ mod storekit_bridge;
 use file_organizer::fileSortify;
 use config::Config;
 use subscription::{Subscription, SubscriptionPlan, PricingInfo, PackagesResponse};
+use settings::GeneralSettings;
+use autostart::AutoStart;
 
 // 全局状态
 struct AppState {
     organizer: Mutex<Option<fileSortify>>,
     is_monitoring: Mutex<bool>,
     subscription: Mutex<Subscription>,
+    settings: Mutex<GeneralSettings>,
 }
 
 // Tauri命令：开始整理文件
@@ -559,6 +564,65 @@ async fn get_app_version(app_handle: tauri::AppHandle) -> Result<String, String>
     Ok(app_handle.package_info().version.to_string())
 }
 
+// Tauri命令：获取通用设置
+#[tauri::command]
+async fn get_general_settings(
+    state: State<'_, AppState>,
+) -> Result<GeneralSettings, String> {
+    let settings = state.settings.lock().await;
+    Ok(settings.clone())
+}
+
+// Tauri命令：更新通用设置
+#[tauri::command]
+async fn update_general_settings(
+    settings: GeneralSettings,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut current_settings = state.settings.lock().await;
+    let old_auto_start = current_settings.auto_start;
+    
+    // 处理开机启动设置变化
+    if old_auto_start != settings.auto_start {
+        if settings.auto_start {
+            if let Err(e) = AutoStart::enable() {
+                return Err(format!("启用开机启动失败: {}", e));
+            }
+        } else {
+            if let Err(e) = AutoStart::disable() {
+                return Err(format!("禁用开机启动失败: {}", e));
+            }
+        }
+    }
+    
+    *current_settings = settings.clone();
+    
+    match settings.save() {
+        Ok(_) => Ok("通用设置保存成功".to_string()),
+        Err(e) => Err(format!("保存通用设置失败: {}", e))
+    }
+}
+
+// Tauri命令：更新单个设置项
+#[tauri::command]
+async fn update_setting(
+    key: String,
+    value: serde_json::Value,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut settings = state.settings.lock().await;
+    
+    match settings.update_setting(&key, value) {
+        Ok(_) => {
+            match settings.save() {
+                Ok(_) => Ok(format!("设置 {} 更新成功", key)),
+                Err(e) => Err(format!("保存设置失败: {}", e))
+            }
+        }
+        Err(e) => Err(e)
+    }
+}
+
 // 设置系统托盘
 fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{
@@ -626,8 +690,9 @@ fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Err
 }
 
 fn main() {
-    // 初始化订阅状态
+    // 初始化订阅状态和设置
     let subscription = Subscription::load().unwrap_or_default();
+    let settings = GeneralSettings::load().unwrap_or_default();
     
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
@@ -640,6 +705,7 @@ fn main() {
             organizer: Mutex::new(None),
             is_monitoring: Mutex::new(false),
             subscription: Mutex::new(subscription),
+            settings: Mutex::new(settings),
         })
         .invoke_handler(tauri::generate_handler![
             organize_files,
@@ -670,6 +736,9 @@ fn main() {
             show_main_window,
             hide_main_window,
             get_app_version,
+            get_general_settings,
+            update_general_settings,
+            update_setting,
             updater::check_update,
             updater::install_update,
             updater::scheduler::get_scheduler_config,
@@ -712,6 +781,22 @@ fn main() {
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             match event {
+                RunEvent::Ready => {
+                    // 应用启动完成后启动更新调度器
+                    let app_handle_clone = app_handle.clone();
+                    tauri::async_runtime::spawn(async move {
+                        // 等待应用完全启动
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                        
+                        // 加载更新调度器配置并启动后台任务
+                        if let Ok(update_config) = updater::scheduler::UpdateSchedulerConfig::load() {
+                            if update_config.enabled {
+                                log::info!("启动更新调度器，检查间隔: {} 小时", update_config.check_interval_hours);
+                                updater::scheduler::UpdateScheduler::start_background_task(update_config, app_handle_clone);
+                            }
+                        }
+                    });
+                }
                 RunEvent::Reopen { has_visible_windows, .. } => {
                     // 当点击 Dock 图标时触发（macOS 特有）
                     if !has_visible_windows {

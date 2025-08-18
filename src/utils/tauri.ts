@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { Config, SubscriptionStatus } from '../types';
+import { Config, SubscriptionStatus, GeneralSettings } from '../types';
 
 // Check if we're running in Tauri environment
 function isTauriEnvironment(): boolean {
@@ -274,6 +274,32 @@ export class TauriAPI {
       return null;
     }
     return this.invoke('get_current_session_info');
+  }
+
+  // 通用设置相关方法
+  async getGeneralSettings(): Promise<GeneralSettings> {
+    if (!this.initialized) {
+      return {
+        auto_start: false,
+        theme: 'system',
+      };
+    }
+    return this.invoke('get_general_settings');
+  }
+
+  async updateGeneralSettings(settings: GeneralSettings): Promise<void> {
+    if (!this.initialized) {
+      console.warn('Cannot update settings in web mode');
+      return;
+    }
+    return this.invoke('update_general_settings', { settings });
+  }
+
+  async updateSetting(key: string, value: any): Promise<string> {
+    if (!this.initialized) {
+      throw new Error('Setting updates not available in web mode');
+    }
+    return this.invoke('update_setting', { key, value });
   }
 }
 

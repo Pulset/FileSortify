@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useLoggerStore } from '../stores';
 import { UpdateDialog } from './UpdateDialog';
+import { tauriAPI } from '../utils/tauri';
+import { GeneralSettings } from '../types';
 
 interface UpdateSchedulerConfig {
   enabled: boolean;
@@ -10,16 +12,16 @@ interface UpdateSchedulerConfig {
   auto_install: boolean;
 }
 
-interface GeneralSettings {
-  start_minimized: boolean;
-  enable_notifications: boolean;
-}
+
 
 const SettingsView: React.FC = () => {
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const { addLog } = useLoggerStore();
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [appVersion, setAppVersion] = useState('加载中...');
+
+  // 加载状态
+  const [isLoading, setIsLoading] = useState(true);
 
   // 更新设置状态
   const [updateConfig, setUpdateConfig] = useState<UpdateSchedulerConfig>({
@@ -30,8 +32,8 @@ const SettingsView: React.FC = () => {
   });
   // 通用设置状态
   const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
-    start_minimized: false,
-    enable_notifications: true,
+    auto_start: false,
+    theme: 'system',
   });
 
   useEffect(() => {
@@ -51,22 +53,35 @@ const SettingsView: React.FC = () => {
         setUpdateConfig(config);
       } catch (error) {
         console.error('加载更新设置失败:', error);
+        addLog(`❌ 加载更新设置失败: ${error}`, 'error');
       }
     };
 
     const loadGeneralSettings = async () => {
       try {
-        // 这里假设有对应的后端接口，如果没有可以使用本地存储
-        // const settings = await invoke<GeneralSettings>('get_general_settings');
-        // setGeneralSettings(settings);
+        const settings = await tauriAPI.getGeneralSettings();
+        setGeneralSettings(settings);
       } catch (error) {
         console.error('加载通用设置失败:', error);
+        addLog(`❌ 加载通用设置失败: ${error}`, 'error');
       }
     };
 
-    fetchAppVersion();
-    loadUpdateConfig();
-    loadGeneralSettings();
+    // 并行加载所有配置
+    const loadAllSettings = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([
+          fetchAppVersion(),
+          loadUpdateConfig(),
+          loadGeneralSettings()
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAllSettings();
   }, []);
 
   const handleCheckForUpdates = async () => {
@@ -95,15 +110,17 @@ const SettingsView: React.FC = () => {
 
     // 直接保存到后端
     try {
-      await invoke('update_scheduler_config', { config: newConfig });
+      await invoke<string>('update_scheduler_config', { config: newConfig });
       addLog('✅ 更新设置已保存', 'success');
     } catch (error) {
       addLog(`❌ 保存更新设置失败: ${error}`, 'error');
       console.error('保存更新设置失败:', error);
+      // 回滚状态
+      setUpdateConfig(updateConfig);
     }
   };
 
-  const handleGeneralSettingsChange = async (key: keyof GeneralSettings, value: boolean) => {
+  const handleGeneralSettingsChange = async (key: keyof GeneralSettings, value: boolean | string) => {
     const newSettings = {
       ...generalSettings,
       [key]: value
@@ -112,14 +129,73 @@ const SettingsView: React.FC = () => {
 
     // 直接保存到后端
     try {
-      // 这里假设有对应的后端接口
-      // await invoke('update_general_settings', { settings: newSettings });
+      await tauriAPI.updateGeneralSettings(newSettings);
       addLog('✅ 通用设置已保存', 'success');
     } catch (error) {
       addLog(`❌ 保存通用设置失败: ${error}`, 'error');
       console.error('保存通用设置失败:', error);
+      // 回滚状态
+      setGeneralSettings(generalSettings);
     }
   };
+
+  // 加载组件
+  const LoadingSpinner = () => (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      color: '#6b7280'
+    }}>
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{
+          animation: 'spin 1s linear infinite',
+          marginRight: '8px'
+        }}
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeDasharray="31.416"
+          strokeDashoffset="31.416"
+          style={{
+            animation: 'dash 2s ease-in-out infinite'
+          }}
+        />
+      </svg>
+      <span style={{ fontSize: '14px' }}>加载中...</span>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          @keyframes dash {
+            0% {
+              stroke-dasharray: 1, 150;
+              stroke-dashoffset: 0;
+            }
+            50% {
+              stroke-dasharray: 90, 150;
+              stroke-dashoffset: -35;
+            }
+            100% {
+              stroke-dasharray: 90, 150;
+              stroke-dashoffset: -124;
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
 
   return (
     <div className='view active'>
@@ -141,141 +217,98 @@ const SettingsView: React.FC = () => {
             <h3 className='setting-title'>更新设置</h3>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* 当前版本和检查更新 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a', marginBottom: '4px' }}>
-                  当前版本
-                </div>
-                <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                  {appVersion}
-                </div>
-              </div>
-              <button
-                onClick={handleCheckForUpdates}
-                disabled={isCheckingUpdate}
-                className='btn'
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />
-                </svg>
-                {isCheckingUpdate ? '检查中...' : '检查更新'}
-              </button>
-            </div>
-
-            {/* 自动更新设置 */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* 当前版本和检查更新 */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
-                    启用自动检查更新
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1a1a1a', marginBottom: '4px' }}>
+                    当前版本
                   </div>
-                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                    定期检查应用更新
+                  <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                    {appVersion}
                   </div>
                 </div>
-                <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                  <input
-                    type="checkbox"
-                    checked={updateConfig.enabled}
-                    onChange={(e) => handleUpdateConfigChange('enabled', e.target.checked)}
-                    style={{ opacity: 0, width: 0, height: 0 }}
-                  />
-                  <span style={{
-                    position: 'absolute',
-                    cursor: 'pointer',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: updateConfig.enabled ? '#007AFF' : '#ccc',
-                    transition: '0.3s',
-                    borderRadius: '24px'
-                  }}>
+                <button
+                  onClick={handleCheckForUpdates}
+                  disabled={isCheckingUpdate}
+                  className='btn'
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z" />
+                  </svg>
+                  {isCheckingUpdate ? '检查中...' : '检查更新'}
+                </button>
+              </div>
+
+              {/* 自动更新设置 */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
+                      启用自动检查更新
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                      定期检查应用更新
+                    </div>
+                  </div>
+                  <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+                    <input
+                      type="checkbox"
+                      checked={updateConfig.enabled}
+                      onChange={(e) => handleUpdateConfigChange('enabled', e.target.checked)}
+                      style={{ opacity: 0, width: 0, height: 0 }}
+                    />
                     <span style={{
                       position: 'absolute',
-                      content: '',
-                      height: '18px',
-                      width: '18px',
-                      left: updateConfig.enabled ? '23px' : '3px',
-                      bottom: '3px',
-                      backgroundColor: 'white',
+                      cursor: 'pointer',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: updateConfig.enabled ? '#007AFF' : '#ccc',
                       transition: '0.3s',
-                      borderRadius: '50%'
-                    }}></span>
-                  </span>
-                </label>
-              </div>
-
-              {updateConfig.enabled && (
-                <>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '8px' }}>
-                      检查更新间隔
-                    </label>
-                    <select
-                      value={updateConfig.check_interval_hours}
-                      onChange={(e) => handleUpdateConfigChange('check_interval_hours', parseInt(e.target.value))}
-                      className='form-input'
-                      style={{ maxWidth: '200px' }}
-                    >
-                      <option value={1}>每小时</option>
-                      <option value={6}>每6小时</option>
-                      <option value={12}>每12小时</option>
-                      <option value={24}>每天</option>
-                      <option value={168}>每周</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
-                        自动下载更新
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        发现更新时自动下载
-                      </div>
-                    </div>
-                    <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                      <input
-                        type="checkbox"
-                        checked={updateConfig.auto_download}
-                        onChange={(e) => handleUpdateConfigChange('auto_download', e.target.checked)}
-                        style={{ opacity: 0, width: 0, height: 0 }}
-                      />
+                      borderRadius: '24px'
+                    }}>
                       <span style={{
                         position: 'absolute',
-                        cursor: 'pointer',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: updateConfig.auto_download ? '#007AFF' : '#ccc',
+                        content: '',
+                        height: '18px',
+                        width: '18px',
+                        left: updateConfig.enabled ? '23px' : '3px',
+                        bottom: '3px',
+                        backgroundColor: 'white',
                         transition: '0.3s',
-                        borderRadius: '24px'
-                      }}>
-                        <span style={{
-                          position: 'absolute',
-                          content: '',
-                          height: '18px',
-                          width: '18px',
-                          left: updateConfig.auto_download ? '23px' : '3px',
-                          bottom: '3px',
-                          backgroundColor: 'white',
-                          transition: '0.3s',
-                          borderRadius: '50%'
-                        }}></span>
-                      </span>
-                    </label>
-                  </div>
-                </>
-              )}
+                        borderRadius: '50%'
+                      }}></span>
+                    </span>
+                  </label>
+                </div>
 
-
+                {updateConfig.enabled && (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '8px' }}>
+                        检查更新间隔
+                      </label>
+                      <select
+                        value={updateConfig.check_interval_hours}
+                        onChange={(e) => handleUpdateConfigChange('check_interval_hours', parseInt(e.target.value))}
+                        className='form-input'
+                        style={{ maxWidth: '200px' }}
+                      >
+                        <option value={24}>每天</option>
+                        <option value={168}>每周</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 通用设置 */}
@@ -289,93 +322,53 @@ const SettingsView: React.FC = () => {
             <h3 className='setting-title'>通用设置</h3>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
-                  开机启动
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
+                    开机启动
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    系统启动时自动运行应用
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                  系统启动时自动运行应用
-                </div>
-              </div>
-              <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                <input
-                  type="checkbox"
-                  checked={generalSettings.start_minimized}
-                  onChange={(e) => handleGeneralSettingsChange('start_minimized', e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  cursor: 'pointer',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: generalSettings.start_minimized ? '#007AFF' : '#ccc',
-                  transition: '0.3s',
-                  borderRadius: '24px'
-                }}>
+                <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
+                  <input
+                    type="checkbox"
+                    checked={generalSettings.auto_start}
+                    onChange={(e) => handleGeneralSettingsChange('auto_start', e.target.checked)}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
                   <span style={{
                     position: 'absolute',
-                    content: '',
-                    height: '18px',
-                    width: '18px',
-                    left: generalSettings.start_minimized ? '23px' : '3px',
-                    bottom: '3px',
-                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: generalSettings.auto_start ? '#007AFF' : '#ccc',
                     transition: '0.3s',
-                    borderRadius: '50%'
-                  }}></span>
-                </span>
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a', marginBottom: '2px' }}>
-                  桌面通知
-                </div>
-                <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                  文件整理完成时显示通知
-                </div>
+                    borderRadius: '24px'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      content: '',
+                      height: '18px',
+                      width: '18px',
+                      left: generalSettings.auto_start ? '23px' : '3px',
+                      bottom: '3px',
+                      backgroundColor: 'white',
+                      transition: '0.3s',
+                      borderRadius: '50%'
+                    }}></span>
+                  </span>
+                </label>
               </div>
-              <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                <input
-                  type="checkbox"
-                  checked={generalSettings.enable_notifications}
-                  onChange={(e) => handleGeneralSettingsChange('enable_notifications', e.target.checked)}
-                  style={{ opacity: 0, width: 0, height: 0 }}
-                />
-                <span style={{
-                  position: 'absolute',
-                  cursor: 'pointer',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: generalSettings.enable_notifications ? '#007AFF' : '#ccc',
-                  transition: '0.3s',
-                  borderRadius: '24px'
-                }}>
-                  <span style={{
-                    position: 'absolute',
-                    content: '',
-                    height: '18px',
-                    width: '18px',
-                    left: generalSettings.enable_notifications ? '23px' : '3px',
-                    bottom: '3px',
-                    backgroundColor: 'white',
-                    transition: '0.3s',
-                    borderRadius: '50%'
-                  }}></span>
-                </span>
-              </label>
             </div>
-
-
-          </div>
+          )}
         </div>
 
         {/* 关于我们 */}
