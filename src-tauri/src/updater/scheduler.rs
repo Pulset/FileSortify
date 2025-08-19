@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
 use tokio::time;
+use crate::i18n::{t, t_format};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateSchedulerConfig {
@@ -151,11 +152,11 @@ pub fn update_scheduler_config(config: UpdateSchedulerConfig) -> Result<String, 
     match config.save() {
         Ok(_) => {
             log::info!("Update scheduler config updated: {:?}", config);
-            Ok("更新调度器配置保存成功".to_string())
+            Ok(t("update_scheduler_config_success").to_string())
         }
         Err(e) => {
             log::error!("Failed to save scheduler config: {}", e);
-            Err(format!("保存更新调度器配置失败: {}", e))
+            Err(t_format("update_scheduler_config_failed", &[&e.to_string()]))
         }
     }
 }

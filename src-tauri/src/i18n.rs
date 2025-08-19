@@ -140,6 +140,8 @@ lazy_static! {
         en.insert("join_monitor_thread_error", "Error while joining monitor thread: {:?}");
         en.insert("monitor_stopped", "File monitoring stopped");
         en.insert("move_file_success", "Moved file: {} -> {}");
+        en.insert("update_scheduler_config_success", "Update scheduler config saved successfully");
+        en.insert("update_scheduler_config_failed", "Failed to save update scheduler config: {}");
         
         // 中文翻译
         let mut zh = HashMap::new();
@@ -246,9 +248,11 @@ lazy_static! {
         zh.insert("monitor_error", "监控错误: {:?}");
         zh.insert("monitor_started", "文件监控已启动");
         zh.insert("monitor_stop_signal_sent", "已发送停止监控信号");
-        zh.insert("join_monitor_thread_error", "等待监控线程结束时出错: {:?}");
+        zh.insert("join_monitor_thread_error", "加入监控线程时出错: {:?}");
         zh.insert("monitor_stopped", "文件监控已停止");
         zh.insert("move_file_success", "移动文件: {} -> {}");
+        zh.insert("update_scheduler_config_success", "更新调度器配置保存成功");
+        zh.insert("update_scheduler_config_failed", "保存更新调度器配置失败: {}");
         
         translations.insert(Language::English, en);
         translations.insert(Language::Chinese, zh);

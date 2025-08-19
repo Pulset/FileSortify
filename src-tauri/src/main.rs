@@ -459,7 +459,7 @@ async fn create_creem_session(
             }
             Ok(session_response)
         }
-        Err(e) => Err(format!("创建支付会话失败: {}", e))
+        Err(e) => Err(t_format("create_payment_session_failed", &[&e.to_string()]))
     }
 }
 
