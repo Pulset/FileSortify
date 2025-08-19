@@ -4,11 +4,47 @@ use std::fs;
 use std::path::PathBuf;
 use crate::i18n::t;
 
+// 路径配置和状态
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathConfig {
+    pub id: String,
+    pub path: String,
+    pub name: String,
+    #[serde(rename = "isMonitoring")]
+    pub is_monitoring: bool,
+    #[serde(rename = "autoOrganize")]
+    pub auto_organize: bool,
+    pub stats: PathStats,
+    #[serde(rename = "customCategories")]
+    pub custom_categories: Option<HashMap<String, Vec<String>>>,
+    #[serde(rename = "excludePatterns")]
+    pub exclude_patterns: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathStats {
+    #[serde(rename = "filesOrganized")]
+    pub files_organized: u64,
+    #[serde(rename = "lastOrganized")]
+    pub last_organized: Option<String>,
+    #[serde(rename = "monitoringSince")]
+    pub monitoring_since: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub categories: HashMap<String, Vec<String>>,
     pub version: String,
     pub description: String,
+    pub paths: Option<Vec<PathConfig>>,
+    // 向后兼容的旧字段
+    #[serde(rename = "downloadsFolder")]
+    pub downloads_folder: Option<String>,
+    #[serde(rename = "autoOrganize")]
+    pub auto_organize: Option<bool>,
+    #[serde(rename = "notificationEnabled")]
+    pub notification_enabled: Option<bool>,
+    pub rules: Option<Vec<serde_json::Value>>,
 }
 
 impl Config {
@@ -136,6 +172,11 @@ impl Default for Config {
             categories,
             version: "1.0".to_string(),
             description: t("config_file_description"),
+            paths: Some(vec![]),
+            downloads_folder: None,
+            auto_organize: None,
+            notification_enabled: None,
+            rules: None,
         }
     }
 }

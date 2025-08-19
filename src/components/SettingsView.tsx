@@ -25,7 +25,7 @@ const SettingsView: React.FC = () => {
 
   // Update settings state
   const [updateConfig, setUpdateConfig] = useState<UpdateSchedulerConfig>({
-    enabled: true,
+    enabled: false,
     check_interval_hours: 24,
     auto_download: false,
     auto_install: false,
@@ -40,7 +40,6 @@ const SettingsView: React.FC = () => {
     const fetchAppVersion = async () => {
       try {
         const version = await invoke<string>('get_app_version');
-        debugger;
         setAppVersion(version);
       } catch (error) {
         console.error('Failed to get app version:', error);

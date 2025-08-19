@@ -45,7 +45,7 @@ impl Subscription {
         
         Subscription {
             plan: SubscriptionPlan::Free,
-            status: SubscriptionStatus::Expired,
+            status: SubscriptionStatus::Trial,
             trial_start_date: Some(Utc::now()),
             subscription_start_date: None,
             subscription_end_date: None,

@@ -8,8 +8,8 @@ import {
   useLoggerStore,
   useStatsStore,
 } from './stores';
-import { I18nProvider } from './contexts/I18nContext';
-
+import { I18nProvider, useI18n } from './contexts/I18nContext';
+import { message } from '@tauri-apps/plugin-dialog';
 // Components
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -20,20 +20,55 @@ import SubscriptionView from './components/SubscriptionView';
 import SettingsView from './components/SettingsView';
 import { UpdateDialog } from './components/UpdateDialog';
 
-function App() {
+function AppContent() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const { t } = useI18n();
 
   // 使用模块化的store
   const { addLog } = useLoggerStore();
   const { config, loading: configLoading, loadConfig } = useConfigStore();
-  const { paths, loadPaths } = usePathsStore();
+  const { paths, loadPaths, organizePathFiles } = usePathsStore();
   const { stats, updateStatsFromPaths } = useStatsStore();
 
+  const handleOrganizeFiles = async (pathId: string) => {
+    const path = paths.find((p) => p.id === pathId);
+    if (!path) return;
+
+    try {
+      addLog(
+        `🔄 ${t('organize.organizingFiles', { name: path.name })}`,
+        'info'
+      );
+      const fileCount = await organizePathFiles(pathId);
+      addLog(
+        `✅ ${t('organize.filesOrganizedCount', {
+          name: path.name,
+          count: fileCount,
+        })}`,
+        'success'
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : error;
+      addLog(
+        `❌ ${t('organize.organizationFailed', {
+          name: path.name,
+          error: msg,
+        })}`,
+        'error'
+      );
+      await message(`${t('errors.organizationFailed')}: ${msg}`, {
+        title: t('common.error'),
+        kind: 'error',
+      });
+    }
+  };
+
   const handleBatchOrganizeFiles = useCallback(async () => {
-    // 这个函数现在只是占位符，实际的批量操作在 OrganizeView 中处理
-    addLog('🔄 请在文件整理页面进行操作', 'info');
-  }, [addLog]);
+    for (const path of paths) {
+      await handleOrganizeFiles(path.id);
+    }
+  }, [paths]);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -46,9 +81,9 @@ function App() {
           const canUse = await tauriAPI.canUseApp();
 
           if (canUse) {
-            addLog('✅ 应用已启动', 'success');
+            addLog(t('messages.appStarted'), 'success');
           } else {
-            addLog('⚠️ 试用期已结束，请订阅后继续使用', 'warning');
+            addLog(t('messages.trialExpired'), 'warning');
           }
 
           // 初始化数据
@@ -61,7 +96,7 @@ function App() {
 
           tauriAPI.listen('toggle-monitoring', () => {
             // 这个事件现在由各个路径的监控状态处理
-            addLog(`📊 监控状态已更新`, 'info');
+            addLog(t('messages.monitoringStatusUpdated'), 'info');
           });
 
           // 监听文件整理事件来更新统计数据
@@ -77,7 +112,10 @@ function App() {
             }) => {
               console.log('File organized event:', event);
               addLog(
-                `📁 文件已整理: ${event.payload.file_name} → ${event.payload.category}`,
+                t('messages.fileOrganized', {
+                  fileName: event.payload.file_name,
+                  category: event.payload.category,
+                }),
                 'success'
               );
             }
@@ -85,20 +123,24 @@ function App() {
 
           // 监听更新相关事件
           listen('update-available', (event: any) => {
-            addLog('🔄 发现新版本可用', 'info');
+            addLog(t('messages.updateAvailable'), 'info');
             setShowUpdateDialog(true);
           });
-
         } catch (error) {
-          addLog(`❌ 初始化失败: ${error?.message}`, 'error');
+          addLog(
+            t('errors.initializationFailed', {
+              error: error instanceof Error ? error?.message : error,
+            }),
+            'error'
+          );
         }
       } else {
-        addLog('❌ Tauri API初始化失败', 'error');
+        addLog(t('errors.tauriInitFailed'), 'error');
       }
     };
 
     initializeApp();
-  }, [addLog, handleBatchOrganizeFiles, loadConfig, loadPaths]);
+  }, []);
 
   // 当路径数据变化时，更新统计数据
   useEffect(() => {
@@ -107,19 +149,17 @@ function App() {
     }
   }, [paths, updateStatsFromPaths]);
 
-  // 向后兼容的事件处理器（现在主要用于快捷键触发）
-  const handleOrganizeFiles = async () => {
-    await handleBatchOrganizeFiles();
-  };
-
   const handleToggleMonitoring = async () => {
     // 计算监控路径数量
     const monitoringPathsCount = stats.pathStats
       ? Object.values(stats.pathStats).filter(
-        (pathStat) => pathStat.monitoringSince !== null
-      ).length
+          (pathStat) => pathStat.monitoringSince !== null
+        ).length
       : 0;
-    addLog(`📊 当前监控状态: ${monitoringPathsCount} 个路径正在监控`, 'info');
+    addLog(
+      t('messages.monitoringStatus', { count: monitoringPathsCount }),
+      'info'
+    );
   };
 
   const renderCurrentView = () => {
@@ -131,11 +171,11 @@ function App() {
             isMonitoring={
               stats.pathStats
                 ? Object.values(stats.pathStats).some(
-                  (pathStat) => pathStat.monitoringSince !== null
-                )
+                    (pathStat) => pathStat.monitoringSince !== null
+                  )
                 : false
             }
-            onOrganizeFiles={handleOrganizeFiles}
+            onOrganizeFiles={handleBatchOrganizeFiles}
             onToggleMonitoring={handleToggleMonitoring}
           />
         );
@@ -155,17 +195,23 @@ function App() {
   };
 
   return (
-    <I18nProvider>
-      <div className='app'>
-        <div className='app-container'>
-          <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-          <main className='main-content'>{renderCurrentView()}</main>
-        </div>
-        <UpdateDialog
-          isOpen={showUpdateDialog}
-          onClose={() => setShowUpdateDialog(false)}
-        />
+    <div className='app'>
+      <div className='app-container'>
+        <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+        <main className='main-content'>{renderCurrentView()}</main>
       </div>
+      <UpdateDialog
+        isOpen={showUpdateDialog}
+        onClose={() => setShowUpdateDialog(false)}
+      />
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
     </I18nProvider>
   );
 }

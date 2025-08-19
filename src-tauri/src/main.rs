@@ -50,7 +50,7 @@ async fn organize_files(
     }
     
     let mut organizer_guard = state.organizer.lock().await;
-    
+
     match fileSortify::new(&folder_path) {
         Ok(organizer) => {
             let mut organizer = organizer.with_app_handle(app_handle);

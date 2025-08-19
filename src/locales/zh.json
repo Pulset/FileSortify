@@ -171,7 +171,12 @@
     "monthlySubscription": "月度",
     "yearlySubscription": "年度",
     "categoryAdded": "成功添加分类: {{name}}，包含 {{count}} 个扩展名",
-    "categoryDeleted": "成功删除分类: {{name}}"
+    "categoryDeleted": "成功删除分类: {{name}}",
+    "pleaseUseOrganizePage": "🔄 请在文件整理页面进行操作",
+    "monitoringStatusUpdated": "📊 监控状态已更新",
+    "fileOrganized": "📁 文件已整理: {{fileName}} → {{category}}",
+    "updateAvailable": "🔄 发现新版本可用",
+    "monitoringStatus": "📊 当前监控状态: {{count}} 个路径正在监控"
   },
   "errors": {
     "selectFolderFirst": "请先选择文件夹",
@@ -196,7 +201,8 @@
     "extensionExists": "该扩展名已存在",
     "pathRequired": "路径不能为空",
     "pathExists": "该路径已存在",
-    "pathNotFound": "路径不存在"
+    "pathNotFound": "路径不存在",
+    "tauriInitFailed": "❌ Tauri API初始化失败"
   },
   "alerts": {
     "deleteCategoryConfirm": "确定要删除分类 \"{{category}}\" 吗？",

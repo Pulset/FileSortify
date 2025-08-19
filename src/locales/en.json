@@ -166,7 +166,12 @@
     "monthlySubscription": "monthly",
     "yearlySubscription": "yearly",
     "categoryAdded": "Successfully added category: {{name}}, containing {{count}} extensions",
-    "categoryDeleted": "Successfully deleted category: {{name}}"
+    "categoryDeleted": "Successfully deleted category: {{name}}",
+    "pleaseUseOrganizePage": "🔄 Please use the file organization page for operations",
+    "monitoringStatusUpdated": "📊 Monitoring status updated",
+    "fileOrganized": "📁 File organized: {{fileName}} → {{category}}",
+    "updateAvailable": "🔄 New version available",
+    "monitoringStatus": "📊 Current monitoring status: {{count}} paths being monitored"
   },
   "paths": {
     "downloadsFolder": "Downloads",
@@ -196,7 +201,8 @@
     "extensionExists": "The extension already exists",
     "pathRequired": "Path cannot be empty",
     "pathExists": "The path already exists",
-    "pathNotFound": "Path not found"
+    "pathNotFound": "Path not found",
+    "tauriInitFailed": "❌ Tauri API initialization failed"
   },
   "alerts": {
     "deleteCategoryConfirm": "Are you sure you want to delete category \"{{category}}\"?",

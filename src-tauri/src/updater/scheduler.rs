@@ -54,7 +54,7 @@ impl UpdateSchedulerConfig {
 impl Default for UpdateSchedulerConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             check_interval_hours: 24, // 每24小时检查一次
             auto_download: false,
             auto_install: false,

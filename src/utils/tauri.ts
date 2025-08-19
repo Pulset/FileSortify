@@ -92,7 +92,7 @@ export class TauriAPI {
         'Event listening failed, possibly due to permissions:',
         error
       );
-      return () => { }; // 返回一个空的取消函数
+      return () => {}; // 返回一个空的取消函数
     }
   }
 

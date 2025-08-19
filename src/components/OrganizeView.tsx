@@ -309,7 +309,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                 height='48'
                 viewBox='0 0 24 24'
                 fill='currentColor'
-                style={{ marginBottom: '16px', opacity: 0.5 }}
+                style={{ margin: '16px auto', opacity: 0.5 }}
               >
                 <path d='M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z' />
               </svg>
