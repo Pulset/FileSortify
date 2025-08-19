@@ -80,8 +80,8 @@ const SubscriptionView: React.FC = () => {
     return (
       <>
         <div className='subscription-card expired mb-6'>
-          <div className='subscription-status'>❌ 试用已结束</div>
-          <div className='subscription-details'>请购买完整版以继续使用</div>
+          <div className='subscription-status'>❌ {t('subscription.expiredStatus')}</div>
+          <div className='subscription-details'>{t('subscription.expiredWarning')}</div>
         </div>
         <CreemSubscriptionView onPaymentSuccess={loadSubscriptionStatus} />
       </>
@@ -94,7 +94,7 @@ const SubscriptionView: React.FC = () => {
       <div className='view active'>
         <div className='loading'>
           <div className='spinner'></div>
-          加载中...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ const SubscriptionView: React.FC = () => {
   return (
     <div className='view active'>
       <div className='view-header'>
-        <h1>购买</h1>
+        <h1>{t('subscription.title')}</h1>
       </div>
 
       <div className='subscription-section'>

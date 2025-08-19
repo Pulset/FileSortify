@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use crate::i18n::t;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -72,69 +73,69 @@ impl Default for Config {
     fn default() -> Self {
         let mut categories = HashMap::new();
         
-        categories.insert("图片".to_string(), vec![
+        categories.insert(t("category_images"), vec![
             ".jpg".to_string(), ".jpeg".to_string(), ".png".to_string(), 
             ".gif".to_string(), ".bmp".to_string(), ".svg".to_string(), 
             ".webp".to_string(), ".tiff".to_string(), ".ico".to_string()
         ]);
         
-        categories.insert("文档".to_string(), vec![
+        categories.insert(t("category_documents"), vec![
             ".pdf".to_string(), ".doc".to_string(), ".docx".to_string(), 
             ".txt".to_string(), ".rtf".to_string(), ".pages".to_string(), 
             ".odt".to_string(), ".epub".to_string()
         ]);
         
-        categories.insert("表格".to_string(), vec![
+        categories.insert(t("category_spreadsheets"), vec![
             ".xls".to_string(), ".xlsx".to_string(), ".csv".to_string(), 
             ".numbers".to_string(), ".ods".to_string()
         ]);
         
-        categories.insert("演示".to_string(), vec![
+        categories.insert(t("category_presentations"), vec![
             ".ppt".to_string(), ".pptx".to_string(), ".key".to_string(), 
             ".odp".to_string()
         ]);
         
-        categories.insert("音频".to_string(), vec![
+        categories.insert(t("category_audio"), vec![
             ".mp3".to_string(), ".wav".to_string(), ".aac".to_string(), 
             ".flac".to_string(), ".m4a".to_string(), ".ogg".to_string(), 
             ".wma".to_string()
         ]);
         
-        categories.insert("视频".to_string(), vec![
+        categories.insert(t("category_video"), vec![
             ".mp4".to_string(), ".avi".to_string(), ".mov".to_string(), 
             ".mkv".to_string(), ".wmv".to_string(), ".flv".to_string(), 
             ".webm".to_string(), ".m4v".to_string()
         ]);
         
-        categories.insert("压缩包".to_string(), vec![
+        categories.insert(t("category_archives"), vec![
             ".zip".to_string(), ".rar".to_string(), ".7z".to_string(), 
             ".tar".to_string(), ".gz".to_string(), ".bz2".to_string(), 
             ".xz".to_string()
         ]);
         
-        categories.insert("程序".to_string(), vec![
+        categories.insert(t("category_programs"), vec![
             ".dmg".to_string(), ".pkg".to_string(), ".app".to_string(), 
             ".exe".to_string(), ".deb".to_string(), ".rpm".to_string()
         ]);
         
-        categories.insert("代码".to_string(), vec![
+        categories.insert(t("category_code"), vec![
             ".py".to_string(), ".js".to_string(), ".html".to_string(), 
             ".css".to_string(), ".java".to_string(), ".cpp".to_string(), 
             ".c".to_string(), ".php".to_string(), ".rb".to_string(), 
             ".go".to_string(), ".rs".to_string()
         ]);
         
-        categories.insert("字体".to_string(), vec![
+        categories.insert(t("category_fonts"), vec![
             ".ttf".to_string(), ".otf".to_string(), ".woff".to_string(), 
             ".woff2".to_string()
         ]);
         
-        categories.insert("其他".to_string(), vec![]);
+        categories.insert(t("category_others"), vec![]);
         
         Config {
             categories,
             version: "1.0".to_string(),
-            description: "文件自动分类工具配置文件".to_string(),
+            description: t("config_file_description"),
         }
     }
 }

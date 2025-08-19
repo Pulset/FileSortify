@@ -15,15 +15,8 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
   const [newCategoryExtensions, setNewCategoryExtensions] = useState('');
   const { t } = useI18n();
 
-  const {
-    addCategory,
-    deleteCategory,
-    addExtension,
-    removeExtension,
-    resetConfig,
-    exportConfig,
-    importConfig,
-  } = useConfigStore();
+  const { addCategory, deleteCategory, addExtension, removeExtension } =
+    useConfigStore();
 
   const { addLog } = useLoggerStore();
 
@@ -43,24 +36,38 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
 
       await addCategory(newCategoryName.trim(), extensions);
       addLog(
-        `✅ ${t('messages.categoryAdded', { name: newCategoryName.trim(), count: extensions.length })}`
+        `✅ ${t('messages.categoryAdded', {
+          name: newCategoryName.trim(),
+          count: extensions.length,
+        })}`
       );
       setNewCategoryName('');
       setNewCategoryExtensions('');
     } catch (error) {
-      addLog(`❌ ${t('errors.addCategoryFailed')}: ${error?.message}`, 'error');
-      await message(error instanceof Error ? error.message : t('errors.addCategoryFailed'), {
-        title: t('common.error'),
-        kind: 'error',
-      });
+      addLog(
+        `❌ ${t('errors.addCategoryFailed')}: ${
+          error instanceof Error ? error.message : ''
+        }`,
+        'error'
+      );
+      await message(
+        error instanceof Error ? error.message : t('errors.addCategoryFailed'),
+        {
+          title: t('common.error'),
+          kind: 'error',
+        }
+      );
     }
   };
 
   const handleDeleteCategory = async (categoryName: string) => {
-    const confirmed = await ask(t('alerts.deleteCategoryConfirm', { category: categoryName }), {
-      title: t('common.confirm'),
-      kind: 'warning',
-    });
+    const confirmed = await ask(
+      t('alerts.deleteCategoryConfirm', { category: categoryName }),
+      {
+        title: t('common.confirm'),
+        kind: 'warning',
+      }
+    );
 
     if (!confirmed) {
       return;
@@ -70,11 +77,21 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
       await deleteCategory(categoryName);
       addLog(`✅ ${t('messages.categoryDeleted', { name: categoryName })}`);
     } catch (error) {
-      addLog(`❌ ${t('errors.deleteCategoryFailed')}: ${error?.message}`, 'error');
-      await message(error instanceof Error ? error.message : t('errors.deleteCategoryFailed'), {
-        title: t('common.error'),
-        kind: 'error',
-      });
+      addLog(
+        `❌ ${t('errors.deleteCategoryFailed')}: ${
+          error instanceof Error ? error.message : ''
+        }`,
+        'error'
+      );
+      await message(
+        error instanceof Error
+          ? error.message
+          : t('errors.deleteCategoryFailed'),
+        {
+          title: t('common.error'),
+          kind: 'error',
+        }
+      );
     }
   };
 
@@ -94,10 +111,13 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
       await addExtension(categoryName, extension);
       if (input) input.value = '';
     } catch (error) {
-      await message(error instanceof Error ? error.message : t('errors.addExtensionFailed'), {
-        title: t('common.error'),
-        kind: 'error',
-      });
+      await message(
+        error instanceof Error ? error.message : t('errors.addExtensionFailed'),
+        {
+          title: t('common.error'),
+          kind: 'error',
+        }
+      );
     }
   };
 
@@ -108,64 +128,64 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
     try {
       await removeExtension(categoryName, extension);
     } catch (error) {
-      await message('删除扩展名失败', {
-        title: '错误',
+      await message(t('errors.removeExtensionFailed'), {
+        title: t('common.error'),
         kind: 'error',
       });
     }
   };
 
-  const handleImportConfig = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+  // const handleImportConfig = () => {
+  //   const input = document.createElement('input');
+  //   input.type = 'file';
+  //   input.accept = '.json';
 
-    input.onchange = async (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  //   input.onchange = async (event) => {
+  //     const file = (event.target as HTMLInputElement).files?.[0];
+  //     if (!file) return;
 
-      try {
-        await importConfig(file);
-      } catch (error) {
-        await message('导入配置失败', {
-          title: '错误',
-          kind: 'error',
-        });
-      }
-    };
+  //     try {
+  //       await importConfig(file);
+  //     } catch (error) {
+  //       await message(t('errors.importConfigFailed'), {
+  //         title: t('common.error'),
+  //         kind: 'error',
+  //       });
+  //     }
+  //   };
 
-    input.click();
-  };
+  //   input.click();
+  // };
 
-  const handleResetConfig = async () => {
-    const confirmed = await ask(
-      '确定要重置为默认配置吗？这将删除所有自定义分类规则。',
-      {
-        title: '确认重置',
-        kind: 'warning',
-      }
-    );
+  // const handleResetConfig = async () => {
+  //   const confirmed = await ask(
+  //     t('alerts.resetConfigConfirm'),
+  //     {
+  //       title: t('common.confirm'),
+  //       kind: 'warning',
+  //     }
+  //   );
 
-    if (!confirmed) {
-      return;
-    }
+  //   if (!confirmed) {
+  //     return;
+  //   }
 
-    try {
-      await resetConfig();
-    } catch (error) {
-      await message('重置配置失败', {
-        title: '错误',
-        kind: 'error',
-      });
-    }
-  };
+  //   try {
+  //     await resetConfig();
+  //   } catch (error) {
+  //     await message(t('errors.resetConfigFailed'), {
+  //       title: t('common.error'),
+  //       kind: 'error',
+  //     });
+  //   }
+  // };
 
   if (loading) {
     return (
       <div className='view active'>
         <div className='loading'>
           <div className='spinner'></div>
-          加载中...
+          {t('common.loading')}
         </div>
       </div>
     );
@@ -174,8 +194,8 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
   return (
     <div className='view active'>
       <div className='view-header'>
-        <h1>分类规则</h1>
-        <p>管理文件分类规则和自定义配置</p>
+        <h1>{t('rules.title')}</h1>
+        <p>{t('rules.description')}</p>
       </div>
 
       <div className='tab-bar'>
@@ -186,7 +206,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
           <svg width='16' height='16' viewBox='0 0 24 24' fill='currentColor'>
             <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' />
           </svg>
-          查看规则
+          {t('rules.viewRules')}
         </button>
         <button
           className={`tab-btn ${activeTab === 'manage-rules' ? 'active' : ''}`}
@@ -195,7 +215,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
           <svg width='16' height='16' viewBox='0 0 24 24' fill='currentColor'>
             <path d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
           </svg>
-          管理规则
+          {t('rules.manageRules')}
         </button>
       </div>
 
@@ -221,14 +241,14 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
         <div className='tab-panel active'>
           <div className='rule-manager'>
             <div className='add-rule-section'>
-              <div className='section-title'>添加新分类</div>
+              <div className='section-title'>{t('rules.addNewCategory')}</div>
               <div className='add-rule-form'>
                 <div className='form-row'>
                   <input
                     type='text'
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder='分类名称'
+                    placeholder={t('rules.categoryName')}
                     className='form-input'
                     onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
                   />
@@ -236,7 +256,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                     type='text'
                     value={newCategoryExtensions}
                     onChange={(e) => setNewCategoryExtensions(e.target.value)}
-                    placeholder='扩展名 (如: .mp4,.avi,.mov)'
+                    placeholder={t('rules.extensions')}
                     className='form-input'
                     onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
                   />
@@ -250,13 +270,15 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                   >
                     <path d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
                   </svg>
-                  添加分类
+                  {t('rules.addCategory')}
                 </button>
               </div>
             </div>
 
             <div className='existing-rules-section'>
-              <div className='section-title'>现有分类</div>
+              <div className='section-title'>
+                {t('rules.existingCategories')}
+              </div>
               <div className='rules-list'>
                 {Object.entries(config.categories).map(
                   ([category, extensions]) => {
@@ -277,7 +299,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                             >
                               <path d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' />
                             </svg>
-                            删除分类
+                            {t('rules.deleteCategory')}
                           </button>
                         </div>
                         <div className='extensions-list'>
@@ -305,7 +327,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                         <div className='add-extension-form'>
                           <input
                             type='text'
-                            placeholder='添加扩展名 (如: .mp4)'
+                            placeholder={t('rules.addExtension')}
                             id={`ext-input-${category}`}
                             className='extension-input form-input'
                             onKeyPress={(e) =>
@@ -333,7 +355,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                             >
                               <path d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' />
                             </svg>
-                            添加
+                            {t('rules.add')}
                           </button>
                         </div>
                       </div>
@@ -344,7 +366,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
             </div>
 
             {/* <div className='config-actions-section'>
-              <div className='section-title'>配置操作</div>
+              <div className='section-title'>{t('rules.configActions')}</div>
               <div className='config-actions'>
                 <button
                   className='config-action-btn export btn secondary'
@@ -358,7 +380,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                   >
                     <path d='M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z' />
                   </svg>
-                  导出配置
+                  {t('rules.exportConfig')}
                 </button>
                 <button
                   className='config-action-btn import btn secondary'
@@ -372,7 +394,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                   >
                     <path d='M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z' />
                   </svg>
-                  导入配置
+                  {t('rules.importConfig')}
                 </button>
                 <button
                   className='config-action-btn reset btn danger'
@@ -386,7 +408,7 @@ const RulesView: React.FC<RulesViewProps> = ({ config, loading }) => {
                   >
                     <path d='M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z' />
                   </svg>
-                  重置默认
+                  {t('rules.resetDefault')}
                 </button>
               </div>
             </div> */}

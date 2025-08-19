@@ -87,7 +87,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
     // 监听应用重启
     const unlistenRestart = listen('update-restart', () => {
       // 可以在这里显示重启提示
-      console.log('应用即将重启...');
+      console.log(t('updateDialog.restartRequired'));
     });
 
     // 清理函数：确保组件卸载时恢复滚动
@@ -159,7 +159,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
     >
       <div className="update-dialog" onWheel={handleWheelEvent}>
         <div className="update-dialog-header">
-          <h2>应用更新</h2>
+          <h2>{t('updateDialog.title')}</h2>
           <button
             onClick={onClose}
             className="close-btn"
@@ -172,7 +172,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
         {isChecking && (
           <div className="loading">
             <div className="spinner"></div>
-            <p>正在检查更新...</p>
+            <p>{t('common.loading')}</p>
           </div>
         )}
 
@@ -186,11 +186,11 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
           <div className="update-content">
             <div className="version-info">
               <p>
-                当前版本: <span className="version-current">{updateStatus.current_version}</span>
+                {t('updateDialog.currentVersion')}: <span className="version-current">{updateStatus.current_version}</span>
               </p>
               {updateStatus.latest_version && (
                 <p>
-                  最新版本: <span className="version-latest">{updateStatus.latest_version}</span>
+                  {t('updateDialog.newVersion')}: <span className="version-latest">{updateStatus.latest_version}</span>
                 </p>
               )}
             </div>
@@ -199,7 +199,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
               <div>
                 {updateStatus.body && (
                   <div className="update-notes">
-                    <h3>更新内容:</h3>
+                    <h3>{t('updateDialog.releaseNotes')}:</h3>
                     <div className="update-body">
                       <pre>{updateStatus.body}</pre>
                     </div>
@@ -209,7 +209,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
                 {isInstalling ? (
                   <div className="progress-section">
                     <div className="progress-header">
-                      <span>下载进度</span>
+                      <span>{t('updateDialog.downloading')}</span>
                       <span>{Math.round(progress)}%</span>
                     </div>
                     <div className="progress-bar">
@@ -219,7 +219,7 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
                       ></div>
                     </div>
                     {progress === 100 && (
-                      <p className="progress-complete">更新完成，应用将在2秒后自动重启</p>
+                      <p className="progress-complete">{t('updateDialog.updateComplete')}</p>
                     )}
                   </div>
                 ) : (
@@ -228,13 +228,13 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
                       onClick={installUpdate}
                       className="btn primary-btn"
                     >
-                      立即更新
+                      {t('updateDialog.updateNow')}
                     </button>
                     <button
                       onClick={onClose}
                       className="btn secondary-btn"
                     >
-                      稍后更新
+                      {t('updateDialog.remindLater')}
                     </button>
                   </div>
                 )}
@@ -242,12 +242,12 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({ isOpen, onClose }) =
             ) : (
               <div className="no-update">
                 <div className="success-icon">✓</div>
-                <p>已是最新版本</p>
+                <p>{t('updateDialog.skipVersion')}</p>
                 <button
                   onClick={onClose}
                   className="btn secondary-btn"
                 >
-                  关闭
+                  {t('common.close')}
                 </button>
               </div>
             )}

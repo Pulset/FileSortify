@@ -43,7 +43,10 @@ export const useConfigStore = create<ConfigState>()(
             set({ config: DEFAULT_CONFIG });
           }
         } catch (error) {
-          console.error('Failed to load config:', error?.message);
+          console.error(
+            'Failed to load config:',
+            error instanceof Error ? error.message : error
+          );
           set({ config: DEFAULT_CONFIG });
         } finally {
           set({ loading: false });

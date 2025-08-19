@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
+import { invoke } from '@tauri-apps/api/core';
 // 支持的语言类型
 export type Language = 'en' | 'zh';
 
@@ -16,7 +22,7 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 // 语言资源
 const translations: Record<Language, any> = {
   en: {},
-  zh: {}
+  zh: {},
 };
 
 // 加载语言资源
@@ -24,7 +30,7 @@ const loadTranslations = async () => {
   try {
     const [enModule, zhModule] = await Promise.all([
       import('../locales/en.json'),
-      import('../locales/zh.json')
+      import('../locales/zh.json'),
     ]);
 
     translations.en = enModule.default;
@@ -35,7 +41,11 @@ const loadTranslations = async () => {
 };
 
 // 翻译函数
-const translate = (language: Language, key: string, params?: Record<string, any>): string => {
+const translate = (
+  language: Language,
+  key: string,
+  params?: Record<string, any>
+): string => {
   const keys = key.split('.');
   let value: any = translations[language];
 
@@ -91,9 +101,17 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children }) => {
     initializeLanguage();
   }, []);
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('app-language', lang);
+  // 在setLanguage函数中添加同步到后端的代码
+  const setLanguage = (newLanguage: Language) => {
+    if (newLanguage !== language) {
+      setLanguageState(newLanguage);
+      localStorage.setItem('language', newLanguage);
+
+      // 同步语言到后端
+      invoke('sync_language', { language: newLanguage }).catch((err) =>
+        console.error('Failed to sync language to backend:', err)
+      );
+    }
   };
 
   const t = (key: string, params?: Record<string, any>) => {

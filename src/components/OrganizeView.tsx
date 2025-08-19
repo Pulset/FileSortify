@@ -41,7 +41,10 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
         setNewPathInput(folder);
       }
     } catch (error) {
-      console.error('选择文件夹失败:', error?.message);
+      console.error(
+        '选择文件夹失败:',
+        error instanceof Error ? error.message : error
+      );
     }
   };
 
@@ -56,12 +59,17 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
     try {
       await addPath(newPathInput, newPathName || undefined);
-      addLog(`✅ ${t('organize.pathAdded', { name: newPathName || t('organize.newPath'), path: newPathInput })}`);
+      addLog(
+        `✅ ${t('organize.pathAdded', {
+          name: newPathName || t('organize.newPath'),
+          path: newPathInput,
+        })}`
+      );
       setNewPathInput('');
       setNewPathName('');
       setShowAddForm(false);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : error
+      const msg = error instanceof Error ? error.message : error;
       addLog(`❌ ${t('errors.addCategoryFailed')}: ${msg}`, 'error');
       await message(`${t('errors.addCategoryFailed')}: ${msg}`, {
         title: t('common.error'),
@@ -74,17 +82,20 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     const path = paths.find((p) => p.id === pathId);
     if (!path) return;
 
-    const confirmed = await ask(t('organize.confirmDeletePath', { name: path.name }), {
-      title: t('organize.confirmDelete'),
-      kind: 'warning',
-    });
+    const confirmed = await ask(
+      t('organize.confirmDeletePath', { name: path.name }),
+      {
+        title: t('organize.confirmDelete'),
+        kind: 'warning',
+      }
+    );
 
     if (confirmed) {
       try {
         await removePath(pathId);
         addLog(`✅ ${t('organize.pathDeleted', { name: path.name })}`);
       } catch (error) {
-        const msg = error instanceof Error ? error.message : error
+        const msg = error instanceof Error ? error.message : error;
         addLog(`❌ ${t('errors.deleteCategoryFailed')}: ${msg}`, 'error');
         await message(`${t('errors.deleteCategoryFailed')}: ${msg}`, {
           title: t('common.error'),
@@ -108,7 +119,7 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
       setEditingPath(null);
       setEditName('');
     } catch (error) {
-      const msg = error instanceof Error ? error.message : error
+      const msg = error instanceof Error ? error.message : error;
       addLog(`❌ ${t('errors.addExtensionFailed')}: ${msg}`, 'error');
       await message(`${t('errors.addExtensionFailed')}: ${msg}`, {
         title: t('common.error'),
@@ -129,12 +140,18 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     try {
       const newState = await togglePathMonitoring(pathId);
       if (newState) {
-        addLog(`🔍 ${t('organize.monitoringStartedFor', { name: path.name })}`, 'success');
+        addLog(
+          `🔍 ${t('organize.monitoringStartedFor', { name: path.name })}`,
+          'success'
+        );
       } else {
-        addLog(`⏹️ ${t('organize.monitoringStopped', { name: path.name })}`, 'info');
+        addLog(
+          `⏹️ ${t('organize.monitoringStopped', { name: path.name })}`,
+          'info'
+        );
       }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : error
+      const msg = error instanceof Error ? error.message : error;
       addLog(`❌ ${t('errors.monitoringToggleFailed')}: ${msg}`, 'error');
       await message(`${t('errors.monitoringToggleFailed')}: ${msg}`, {
         title: t('common.error'),
@@ -148,12 +165,27 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     if (!path) return;
 
     try {
-      addLog(`🔄 ${t('organize.organizingFiles', { name: path.name })}`, 'info');
+      addLog(
+        `🔄 ${t('organize.organizingFiles', { name: path.name })}`,
+        'info'
+      );
       const fileCount = await organizePathFiles(pathId);
-      addLog(`✅ ${t('organize.filesOrganizedCount', { name: path.name, count: fileCount })}`, 'success');
+      addLog(
+        `✅ ${t('organize.filesOrganizedCount', {
+          name: path.name,
+          count: fileCount,
+        })}`,
+        'success'
+      );
     } catch (error) {
-      const msg = error instanceof Error ? error.message : error
-      addLog(`❌ ${t('organize.organizationFailed', { name: path.name, error: msg })}`, 'error');
+      const msg = error instanceof Error ? error.message : error;
+      addLog(
+        `❌ ${t('organize.organizationFailed', {
+          name: path.name,
+          error: msg,
+        })}`,
+        'error'
+      );
       await message(`${t('errors.organizationFailed')}: ${msg}`, {
         title: t('common.error'),
         kind: 'error',
@@ -264,7 +296,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
       {/* 路径列表 */}
       <div className='settings-section'>
-        <div className='section-title'>{t('organize.configuredPaths')} ({paths.length})</div>
+        <div className='section-title'>
+          {t('organize.configuredPaths')} ({paths.length})
+        </div>
 
         {paths.length === 0 ? (
           <div className='setting-card'>
@@ -340,10 +374,13 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                   </div>
                   <div className='path-status'>
                     <span
-                      className={`status-badge ${path.isMonitoring ? 'monitoring' : 'stopped'
-                        }`}
+                      className={`status-badge ${
+                        path.isMonitoring ? 'monitoring' : 'stopped'
+                      }`}
                     >
-                      {path.isMonitoring ? t('organize.monitoring') : t('organize.stopped')}
+                      {path.isMonitoring
+                        ? t('organize.monitoring')
+                        : t('organize.stopped')}
                     </span>
                   </div>
                 </div>
@@ -356,20 +393,26 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
                 <div className='path-stats'>
                   <div className='stat-item'>
-                    <span className='stat-label'>{t('organize.filesOrganized')}:</span>
+                    <span className='stat-label'>
+                      {t('organize.filesOrganized')}:
+                    </span>
                     <span className='stat-value'>
                       {path.stats.filesOrganized}
                     </span>
                   </div>
                   <div className='stat-item'>
-                    <span className='stat-label'>{t('organize.lastOrganized')}:</span>
+                    <span className='stat-label'>
+                      {t('organize.lastOrganized')}:
+                    </span>
                     <span className='stat-value'>
                       {path.stats.lastOrganized || t('organize.neverOrganized')}
                     </span>
                   </div>
                   {path.stats.monitoringSince && (
                     <div className='stat-item'>
-                      <span className='stat-label'>{t('organize.monitoringStarted')}:</span>
+                      <span className='stat-label'>
+                        {t('organize.monitoringStarted')}:
+                      </span>
                       <span className='stat-value'>
                         {path.stats.monitoringSince}
                       </span>
@@ -411,7 +454,9 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
                         }
                       />
                     </svg>
-                    {path.isMonitoring ? t('organize.stopMonitoring') : t('organize.startMonitoring')}
+                    {path.isMonitoring
+                      ? t('organize.stopMonitoring')
+                      : t('organize.startMonitoring')}
                   </button>
 
                   <button

@@ -30,6 +30,11 @@ struct AppState {
 }
 
 // Tauri命令：开始整理文件
+// 在文件顶部添加
+mod i18n;
+use i18n::{t, t_format, set_language, Language};
+
+// 修改organize_files函数中的硬编码文本
 #[tauri::command]
 async fn organize_files(
     folder_path: String,
@@ -40,7 +45,7 @@ async fn organize_files(
     {
         let subscription = state.subscription.lock().await;
         if !subscription.can_use_app() {
-            return Err("试用期已结束，请订阅后继续使用".to_string());
+            return Err(t("trial_ended"));
         }
     }
     
@@ -52,16 +57,16 @@ async fn organize_files(
             match organizer.organize_existing_files() {
                 Ok(count) => {
                     *organizer_guard = Some(organizer);
-                    Ok(format!("成功整理了 {} 个文件", count))
+                    Ok(t_format("files_organized", &[&count.to_string()]))
                 }
-                Err(e) => Err(format!("整理文件失败: {}", e))
+                Err(e) => Err(t_format("organize_failed", &[&e.to_string()]))
             }
         }
-        Err(e) => Err(format!("初始化失败: {}", e))
+        Err(e) => Err(t_format("init_failed", &[&e.to_string()]))
     }
 }
 
-// Tauri命令：开始/停止监控
+// 修改toggle_monitoring函数中的硬编码文本
 #[tauri::command]
 async fn toggle_monitoring(
     folder_path: String,
@@ -72,7 +77,7 @@ async fn toggle_monitoring(
     {
         let subscription = state.subscription.lock().await;
         if !subscription.can_use_app() {
-            return Err("试用期已结束，请订阅后继续使用".to_string());
+            return Err(t("trial_ended"));
         }
     }
     
@@ -89,8 +94,8 @@ async fn toggle_monitoring(
         // 发送通知
         let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
             .builder()
-            .title("文件监控已停止")
-            .body("文件自动分类监控已停止")
+            .title(&t("monitoring_stopped_title"))
+            .body(&t("monitoring_stopped_body"))
             .show();
             
         Ok(false)
@@ -107,39 +112,40 @@ async fn toggle_monitoring(
                         // 发送通知
                         let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                             .builder()
-                            .title("文件监控已启动")
-                            .body(&format!("正在监控文件夹: {}", folder_path))
+                            .title(&t("monitoring_started_title"))
+                            .body(&t_format("monitoring_started_body", &[&folder_path]))
                             .show();
                             
                         Ok(true)
                     }
-                    Err(e) => Err(format!("启动监控失败: {}", e))
+                    Err(e) => Err(t_format("monitoring_start_failed", &[&e.to_string()]))
                 }
             }
-            Err(e) => Err(format!("初始化失败: {}", e))
+            Err(e) => Err(t_format("init_failed", &[&e.to_string()]))
         }
     }
 }
 
 // Tauri命令：获取配置
+// 修改get_config函数
 #[tauri::command]
 async fn get_config() -> Result<Config, String> {
     match Config::load() {
         Ok(config) => Ok(config),
-        Err(e) => Err(format!("加载配置失败: {}", e))
+        Err(e) => Err(t_format("load_config_failed", &[&e.to_string()]))
     }
 }
 
-// Tauri命令：保存配置
+// 修改save_config函数
 #[tauri::command]
 async fn save_config(config: Config) -> Result<String, String> {
     match config.save() {
-        Ok(_) => Ok("配置保存成功".to_string()),
-        Err(e) => Err(format!("保存配置失败: {}", e))
+        Ok(_) => Ok(t("config_saved")),
+        Err(e) => Err(t_format("save_config_failed", &[&e.to_string()]))
     }
 }
 
-// Tauri命令：选择文件夹
+// 修改select_folder函数
 #[tauri::command]
 async fn select_folder(app_handle: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
@@ -154,11 +160,11 @@ async fn select_folder(app_handle: tauri::AppHandle) -> Result<Option<String>, S
     
     match rx.await {
         Ok(result) => Ok(result),
-        Err(_) => Err("文件夹选择被取消或失败".to_string()),
+        Err(_) => Err(t("folder_selection_cancelled")),
     }
 }
 
-// Tauri命令：获取默认下载文件夹
+// 修改get_default_downloads_folder函数
 #[tauri::command]
 async fn get_default_downloads_folder() -> Result<String, String> {
     if let Some(downloads_dir) = dirs::download_dir() {
@@ -180,7 +186,7 @@ async fn get_default_downloads_folder() -> Result<String, String> {
         }
     }
     
-    Err("无法获取默认下载文件夹".to_string())
+    Err(t("downloads_folder_not_found"))
 }
 
 // 订阅相关命令
@@ -298,10 +304,10 @@ async fn cancel_subscription(
 // Tauri命令：打开支付页面 (已禁用，仅保留兼容性)
 #[tauri::command]
 async fn open_payment_page(_plan: String, _app_handle: tauri::AppHandle) -> Result<(), String> {
-    Err("此功能已禁用，请使用 Creem 支付".to_string())
+    Err(t("payment_disabled"))
 }
 
-// Tauri命令：验证Apple收据
+// 修改verify_apple_receipt函数
 #[tauri::command]
 async fn verify_apple_receipt(
     receipt_data: String,
@@ -325,11 +331,11 @@ async fn verify_apple_receipt(
             // 发送通知
             let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                 .builder()
-                .title("订阅验证成功")
-                .body("您的Apple订阅已成功验证！")
+                .title(&t("apple_receipt_verify_success_title"))
+                .body(&t("apple_receipt_verify_success"))
                 .show();
                 
-            Ok("Apple订阅验证成功".to_string())
+            Ok(t("apple_receipt_verify_success"))
         }
         Err(e) => Err(format!("验证Apple收据失败: {}", e))
     }
@@ -360,13 +366,13 @@ async fn refresh_apple_subscription(
     }
 }
 
-// Tauri命令：获取Apple产品信息 (已禁用，仅保留兼容性)
+// 修改get_apple_products函数
 #[tauri::command]
 async fn get_apple_products() -> Result<serde_json::Value, String> {
-    Err("Apple Store 功能已禁用，请使用 Creem 支付".to_string())
+    Err(t("payment_disabled"))
 }
 
-// Tauri命令：启动App Store内购流程
+// 修改start_apple_purchase函数
 #[tauri::command]
 async fn start_apple_purchase(product_id: String, _state: State<'_, AppState>) -> Result<String, String> {
     #[cfg(target_os = "macos")]
@@ -374,11 +380,11 @@ async fn start_apple_purchase(product_id: String, _state: State<'_, AppState>) -
         use crate::storekit_bridge::StoreKitManager;
         
         let mut store_manager = StoreKitManager::new();
-        store_manager.initialize().map_err(|e| format!("初始化StoreKit失败: {}", e))?;
+        store_manager.initialize().map_err(|e| t_format("apple_purchase_init_failed", &[&e.to_string()]))?;
         
-        store_manager.purchase_product(&product_id).map_err(|e| format!("启动购买失败: {}", e))?;
+        store_manager.purchase_product(&product_id).map_err(|e| t_format("apple_purchase_start_failed", &[&e.to_string()]))?;
         
-        Ok("已启动App Store购买流程".to_string())
+        Ok(t("apple_purchase_started"))
     }
     
     #[cfg(not(target_os = "macos"))]
@@ -586,11 +592,11 @@ async fn update_general_settings(
     if old_auto_start != settings.auto_start {
         if settings.auto_start {
             if let Err(e) = AutoStart::enable() {
-                return Err(format!("启用开机启动失败: {}", e));
+                return Err(t_format("enable_autostart_failed", &[&e.to_string()]));
             }
         } else {
             if let Err(e) = AutoStart::disable() {
-                return Err(format!("禁用开机启动失败: {}", e));
+                return Err(t_format("disable_autostart_failed", &[&e.to_string()]));
             }
         }
     }
@@ -598,12 +604,12 @@ async fn update_general_settings(
     *current_settings = settings.clone();
     
     match settings.save() {
-        Ok(_) => Ok("通用设置保存成功".to_string()),
-        Err(e) => Err(format!("保存通用设置失败: {}", e))
+        Ok(_) => Ok(t("settings_saved")),
+        Err(e) => Err(t_format("save_settings_failed", &[&e.to_string()]))
     }
 }
 
-// Tauri命令：更新单个设置项
+// 修改update_setting函数
 #[tauri::command]
 async fn update_setting(
     key: String,
@@ -615,15 +621,15 @@ async fn update_setting(
     match settings.update_setting(&key, value) {
         Ok(_) => {
             match settings.save() {
-                Ok(_) => Ok(format!("设置 {} 更新成功", key)),
-                Err(e) => Err(format!("保存设置失败: {}", e))
+                Ok(_) => Ok(t_format("setting_updated", &[&key])),
+                Err(e) => Err(t_format("save_settings_failed", &[&e.to_string()]))
             }
         }
         Err(e) => Err(e)
     }
 }
 
-// 设置系统托盘
+// 修改setup_system_tray函数中的菜单项文本
 fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::{
         menu::{Menu, MenuItem, PredefinedMenuItem},
@@ -631,10 +637,10 @@ fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Err
     };
     
     // 创建托盘菜单
-    let show_item = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
-    let hide_item = MenuItem::with_id(app, "hide", "隐藏窗口", true, None::<&str>)?;
+    let show_item = MenuItem::with_id(app, "show", &t("show_window"), true, None::<&str>)?;
+    let hide_item = MenuItem::with_id(app, "hide", &t("hide_window"), true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
-    let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+    let quit_item = MenuItem::with_id(app, "quit", &t("quit"), true, None::<&str>)?;
     
     let menu = Menu::with_items(app, &[&show_item, &hide_item, &separator, &quit_item])?;
     
@@ -689,6 +695,20 @@ fn setup_system_tray(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
+// 添加同步语言的命令
+#[tauri::command]
+async fn sync_language(language: String) -> Result<(), String> {
+    let lang = match language.as_str() {
+        "zh" => Language::Chinese,
+        "en" => Language::English,
+        _ => Language::English,
+    };
+    
+    set_language(lang);
+    Ok(())
+}
+
+// 在main函数中注册这个命令
 fn main() {
     // 初始化订阅状态和设置
     let subscription = Subscription::load().unwrap_or_default();
@@ -739,6 +759,7 @@ fn main() {
             get_general_settings,
             update_general_settings,
             update_setting,
+            sync_language,
             updater::check_update,
             updater::install_update,
             updater::scheduler::get_scheduler_config,
@@ -747,6 +768,8 @@ fn main() {
             updater::github::get_latest_github_release
         ])
         .setup(|app| {
+            // 设置默认语言
+            set_language(Language::English);
             // 设置系统托盘
             setup_system_tray(app)?;
             

@@ -237,6 +237,38 @@
         "system": "System"
       }
     },
+    "update": {
+      "title": "Update Settings",
+      "currentVersion": "Current Version",
+      "checkForUpdates": "Check for Updates",
+      "checking": "Checking...",
+      "enableAutoCheck": "Enable automatic update check",
+      "enableAutoCheckDesc": "Periodically check for application updates",
+      "checkInterval": "Check interval",
+      "checkIntervalDesc": "Set the frequency of update checks",
+      "intervals": {
+        "daily": "Daily",
+        "weekly": "Weekly"
+      },
+      "autoDownload": "Auto download updates",
+      "autoDownloadDesc": "Automatically download updates when found",
+      "autoInstall": "Auto install updates",
+      "autoInstallDesc": "Automatically install and restart after download"
+    },
+    "about": {
+      "title": "About",
+      "subtitle": "Smart File Organization Tool",
+      "productIntro": "Product Introduction",
+      "productIntroDesc": "FileSortify is an intelligent file auto-classification tool that can automatically organize your files based on file types. It supports custom classification rules and real-time file monitoring, making your file management more efficient.",
+      "mainFeatures": "Main Features",
+      "features": {
+        "smartClassification": "🗂️ Smart File Classification",
+        "realTimeMonitoring": "⚡ Real-time File Monitoring",
+        "customRules": "🎯 Custom Classification Rules",
+        "detailedReports": "📊 Detailed Statistics Reports",
+        "desktopNotifications": "🔔 Desktop Notification Alerts"
+      }
+    },
     "notifications": {
       "title": "Notifications",
       "enabled": "Enable Notifications",
@@ -257,6 +289,8 @@
       "resetSettings": "Reset Settings",
       "resetSettingsDesc": "Reset all settings to default values",
       "resetConfirm": "Are you sure you want to reset all settings to default? This action cannot be undone."
-    }
+    },
+    "saveSuccess": "Settings saved",
+    "saveFailed": "Save failed"
   }
 }
