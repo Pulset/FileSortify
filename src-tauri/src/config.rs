@@ -166,8 +166,6 @@ impl Default for Config {
             ".woff2".to_string()
         ]);
         
-        categories.insert(t("category_others"), vec![]);
-        
         Config {
             categories,
             version: "1.0".to_string(),
