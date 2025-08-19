@@ -59,7 +59,7 @@ impl fileSortify {
         let folder_name = if cfg!(windows) {
             "Organized Files"  // Windows使用英文名避免编码问题
         } else {
-            &t("organized_folder_name")
+            "Organized Files"
         };
         
         let organized_path = downloads_path.join(folder_name);
@@ -319,6 +319,17 @@ impl fileSortify {
         if !self.organized_path.exists() {
             fs::create_dir_all(&self.organized_path)?;
         }
+        
+        for category in self.config.categories.keys() {
+            if *category != t("category_others") {
+                let category_path = self.organized_path.join(category);
+                if !category_path.exists() {
+                    fs::create_dir_all(&category_path)?;
+                    self.emit_log(&t_format("create_folder", &[category]), "info");
+                }
+            }
+        }
+        
         Ok(())
     }
     

@@ -142,7 +142,8 @@ lazy_static! {
         en.insert("move_file_success", "Moved file: {} -> {}");
         en.insert("update_scheduler_config_success", "Update scheduler config saved successfully");
         en.insert("update_scheduler_config_failed", "Failed to save update scheduler config: {}");
-        
+        en.insert("create_folder", "Create folder: {}");
+
         // 中文翻译
         let mut zh = HashMap::new();
         // 错误消息
@@ -253,7 +254,8 @@ lazy_static! {
         zh.insert("move_file_success", "移动文件: {} -> {}");
         zh.insert("update_scheduler_config_success", "更新调度器配置保存成功");
         zh.insert("update_scheduler_config_failed", "保存更新调度器配置失败: {}");
-        
+        en.insert("create_folder", "创建文件夹: {}");
+
         translations.insert(Language::English, en);
         translations.insert(Language::Chinese, zh);
         
