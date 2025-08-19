@@ -17,15 +17,19 @@ export const useLoggerStore = create<LoggerState>()(
       logs: [],
 
       addLog: (message: string, type: LogEntry['type'] = 'info') => {
+        const now = new Date();
         const newLog: LogEntry = {
           id: Date.now().toString(36) + Math.random().toString(36).substring(2),
-          timestamp: new Date().toLocaleString(),
+          timestamp: `${now.toLocaleString()}.${now
+            .getMilliseconds()
+            .toString()
+            .padStart(3, '0')}`,
           message,
-          type
+          type,
         };
 
-        set(state => ({
-          logs: [newLog, ...state.logs].slice(0, 1000) // Keep only last 1000 logs
+        set((state) => ({
+          logs: [newLog, ...state.logs].slice(0, 1000), // Keep only last 1000 logs
         }));
       },
 
