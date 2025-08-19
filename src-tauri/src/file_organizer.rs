@@ -12,6 +12,7 @@ use tauri::{AppHandle, Emitter};
 use chrono;
 
 use crate::config::Config;
+use crate::i18n::{t, t_format};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogMessage {
@@ -58,7 +59,7 @@ impl fileSortify {
         let folder_name = if cfg!(windows) {
             "Organized Files"  // Windows使用英文名避免编码问题
         } else {
-            "已分类文件"
+            &t("organized_folder_name")
         };
         
         let organized_path = downloads_path.join(folder_name);
@@ -138,12 +139,12 @@ impl fileSortify {
                 }
             } else {
                 if let Some(file_name) = path.file_name() {
-                    self.emit_log(&format!("跳过未匹配文件: {:?} (保持在原地)", file_name), "info");
+                    self.emit_log(&t_format("skip_unmatched_file", &[&format!("{:?}", file_name)]), "info");
                 }
             }
         }
         
-        self.emit_log(&format!("整理完成，共移动 {} 个文件", files_moved), "success");
+        self.emit_log(&t_format("organize_complete_moved_count", &[&files_moved.to_string()]), "success");
         Ok(files_moved)
     }
     
@@ -197,7 +198,7 @@ impl fileSortify {
             loop {
                 // 检查停止信号
                 if stop_signal.load(Ordering::Relaxed) {
-                    emit_log("收到停止监控信号，退出监控线程", "info");
+                    emit_log(&t("monitor_stop_signal_received"), "info");
                     break;
                 }
 
@@ -207,7 +208,7 @@ impl fileSortify {
                             Ok(Event { kind, paths, .. }) => {
                                 match kind {
                                     EventKind::Create(_) => {
-                                        emit_log(&format!("检测到文件创建事件，文件数量: {}", paths.len()), "info");
+                                        emit_log(&t_format("file_create_event_detected", &[&paths.len().to_string()]), "info");
                                         for path in paths {
                                     if path.is_file() {
                                         if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
@@ -221,12 +222,12 @@ impl fileSortify {
                                         let now = std::time::Instant::now();
                                         if let Some(last_time) = last_processed.get(&path) {
                                             let duration = now.duration_since(*last_time);
-                                            emit_log(&format!("文件 {:?} 在 {:?} 前已处理过，跳过", path.file_name(), duration), "info");
+                                            emit_log(&t_format("file_recently_processed_skip", &[&format!("{:?}", path.file_name()), &format!("{:?}", duration)]), "info");
                                             if duration < Duration::from_secs(5) {
                                                 continue; // 跳过重复处理
                                             }
                                         }
-                                        emit_log(&format!("开始处理文件: {:?}", path.file_name()), "info");
+                                        emit_log(&t_format("start_processing_file", &[&format!("{:?}", path.file_name())]), "info");
                                         last_processed.insert(path.clone(), now);
                                         
                                         // 等待文件写入完成
@@ -237,7 +238,7 @@ impl fileSortify {
                                                 Ok(_) => {
                                                     if let Some(file_name) = path.file_name() {
                                                         if let Some(file_name_str) = file_name.to_str() {
-                                                            emit_log(&format!("新文件已分类: {} -> {}", file_name_str, category), "success");
+                                                            emit_log(&t_format("new_file_categorized", &[file_name_str, &category]), "success");
                                                             
                                                             // 发送文件整理事件
                                                             if let Some(app_handle) = &app_handle {
@@ -255,12 +256,12 @@ impl fileSortify {
                                                     }
                                                 }
                                                 Err(e) => {
-                                                    emit_log(&format!("移动文件失败: {:?}", e), "error");
+                                                    emit_log(&t_format("move_file_failed", &[&format!("{:?}", e)]), "error");
                                                 }
                                             }
                                         } else {
                                             if let Some(file_name) = path.file_name() {
-                                                emit_log(&format!("新文件未匹配分类，保持在原地: {:?}", file_name), "info");
+                                                emit_log(&t_format("new_file_unmatched", &[&format!("{:?}", file_name)]), "info");
                                             }
                                         }
                                     }
@@ -272,7 +273,7 @@ impl fileSortify {
                                 }
                             }
                             Err(e) => {
-                                emit_log(&format!("事件处理错误: {:?}", e), "error");
+                                emit_log(&t_format("event_process_error", &[&format!("{:?}", e)]), "error");
                             }
                         }
                     }
@@ -281,7 +282,7 @@ impl fileSortify {
                         continue;
                     }
                     Err(e) => {
-                        emit_log(&format!("监控错误: {:?}", e), "error");
+                        emit_log(&t_format("monitor_error", &[&format!("{:?}", e)]), "error");
                         break;
                     }
                 }
@@ -289,14 +290,14 @@ impl fileSortify {
         });
         
         self.monitoring_thread = Some(handle);
-        self.emit_log("文件监控已启动", "success");
+        self.emit_log(&t("monitor_started"), "success");
         Ok(())
     }
     
     pub fn stop_monitoring(&mut self) {
         if let Some(stop_signal) = &self.monitoring_stop_signal {
             stop_signal.store(true, Ordering::Relaxed);
-            self.emit_log("已发送停止监控信号", "info");
+            self.emit_log(&t("monitor_stop_signal_sent"), "info");
         }
         
         // 等待线程结束
@@ -304,31 +305,20 @@ impl fileSortify {
             // 给线程一些时间来响应停止信号
             std::thread::sleep(Duration::from_millis(200));
             if let Err(e) = handle.join() {
-                self.emit_log(&format!("等待监控线程结束时出错: {:?}", e), "error");
+                self.emit_log(&t_format("join_monitor_thread_error", &[&format!("{:?}", e)]), "error");
             }
         }
         
         // 清理资源
         self.monitoring_stop_signal = None;
         
-        self.emit_log("文件监控已停止", "success");
+        self.emit_log(&t("monitor_stopped"), "success");
     }
     
     fn create_folders(&self) -> Result<(), Box<dyn std::error::Error>> {
         if !self.organized_path.exists() {
             fs::create_dir_all(&self.organized_path)?;
         }
-        
-        for category in self.config.categories.keys() {
-            if category != "其他" {
-                let category_path = self.organized_path.join(category);
-                if !category_path.exists() {
-                    fs::create_dir_all(&category_path)?;
-                    self.emit_log(&format!("创建文件夹: {}", category), "info");
-                }
-            }
-        }
-        
         Ok(())
     }
     
@@ -342,7 +332,7 @@ impl fileSortify {
             .map(|ext| format!(".{}", ext.to_lowercase()))?;
         
         for (category, extensions) in &config.categories {
-            if category != "其他" && extensions.contains(&extension) {
+            if category != &t("category_others") && extensions.contains(&extension) {
                 return Some(category.clone());
             }
         }
@@ -356,7 +346,7 @@ impl fileSortify {
         if result.is_ok() {
             if let Some(filename) = source_path.file_name() {
                 if let Some(filename_str) = filename.to_str() {
-                    self.emit_log(&format!("移动文件: {} -> {}", filename_str, category), "success");
+                    self.emit_log(&t_format("move_file_success", &[filename_str, category]), "success");
                     self.emit_file_organized(filename_str, category);
                 }
             }
@@ -367,7 +357,7 @@ impl fileSortify {
     
     fn move_file_static(source_path: &Path, category: &str, organized_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
         let filename = source_path.file_name()
-            .ok_or("无法获取文件名")?;
+            .ok_or("Failed to get file name")?;
         
         let destination_folder = organized_path.join(category);
         let mut destination_path = destination_folder.join(filename);
@@ -390,7 +380,7 @@ impl fileSortify {
         fs::rename(source_path, &destination_path)?;
         // 注意：这里不发送日志，因为静态方法无法访问 app_handle
         // 日志会在调用方法中发送
-        log::info!("移动文件: {:?} -> {}", filename, category);
+        log::info!("Moved file: {:?} -> {}", filename, category);
         
         Ok(true)
     }

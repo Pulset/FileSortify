@@ -245,7 +245,7 @@ async fn fetch_packages_from_server(
             }
             Ok(packages)
         },
-        Err(e) => Err(format!("获取套餐信息失败: {}", e))
+        Err(e) => Err(t_format("fetch_packages_failed", &[&e.to_string()]))
     }
 }
 
@@ -260,7 +260,7 @@ async fn activate_subscription(
     
     let subscription_plan = match plan.as_str() {
         "lifetime" => SubscriptionPlan::Lifetime,
-        _ => return Err("无效的订阅计划".to_string()),
+        _ => return Err(t("invalid_subscription_plan")),
     };
     
     match subscription.activate_subscription(subscription_plan) {
@@ -268,13 +268,13 @@ async fn activate_subscription(
             // 发送通知
             let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                 .builder()
-                .title("购买成功")
-                .body("感谢您购买 FileSortify！现在可以无限制使用所有功能。")
+                .title(&t("purchase_success_title"))
+                .body(&t("purchase_success_body"))
                 .show();
                 
-            Ok("购买激活成功".to_string())
+            Ok(t("purchase_activation_success"))
         }
-        Err(e) => Err(format!("激活购买失败: {}", e))
+        Err(e) => Err(t_format("purchase_activation_failed", &[&e.to_string()]))
     }
 }
 
@@ -291,13 +291,13 @@ async fn cancel_subscription(
             // 发送通知
             let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                 .builder()
-                .title("订阅已取消")
-                .body("您的订阅已成功取消")
+                .title(&t("subscription_cancelled_title"))
+                .body(&t("subscription_cancelled_body"))
                 .show();
                 
-            Ok("订阅已取消".to_string())
+            Ok(t("subscription_cancelled"))
         }
-        Err(e) => Err(format!("取消订阅失败: {}", e))
+        Err(e) => Err(t_format("cancel_subscription_failed", &[&e.to_string()]))
     }
 }
 
@@ -337,7 +337,7 @@ async fn verify_apple_receipt(
                 
             Ok(t("apple_receipt_verify_success"))
         }
-        Err(e) => Err(format!("验证Apple收据失败: {}", e))
+        Err(e) => Err(t_format("apple_receipt_verify_failed_format", &[&e.to_string()]))
     }
 }
 
@@ -360,9 +360,9 @@ async fn refresh_apple_subscription(
                 *subscription = subscription_clone;
             }
             
-            Ok("订阅状态已刷新".to_string())
+            Ok(t("subscription_status_refreshed"))
         }
-        Err(e) => Err(format!("刷新订阅状态失败: {}", e))
+        Err(e) => Err(t_format("refresh_subscription_failed", &[&e.to_string()]))
     }
 }
 
@@ -389,7 +389,7 @@ async fn start_apple_purchase(product_id: String, _state: State<'_, AppState>) -
     
     #[cfg(not(target_os = "macos"))]
     {
-        Err("App Store内购仅在macOS上可用".to_string())
+        Err(t("apple_purchase_macos_only_format"))
     }
 }
 
@@ -401,16 +401,16 @@ async fn restore_apple_purchases(_state: State<'_, AppState>) -> Result<String, 
         use crate::storekit_bridge::StoreKitManager;
         
         let mut store_manager = StoreKitManager::new();
-        store_manager.initialize().map_err(|e| format!("初始化StoreKit失败: {}", e))?;
+        store_manager.initialize().map_err(|e| t_format("storekit_init_failed", &[&e.to_string()]))?;
         
-        store_manager.restore_purchases().map_err(|e| format!("恢复购买失败: {}", e))?;
+        store_manager.restore_purchases().map_err(|e| t_format("restore_purchases_failed", &[&e.to_string()]))?;
         
-        Ok("已启动购买恢复流程".to_string())
+        Ok(t("purchase_restore_started"))
     }
     
     #[cfg(not(target_os = "macos"))]
     {
-        Err("App Store内购仅在macOS上可用".to_string())
+        Err(t("apple_purchase_macos_only_format"))
     }
 }
 
@@ -422,12 +422,12 @@ async fn get_local_receipt_data() -> Result<String, String> {
         use crate::storekit_bridge::StoreKitManager;
         
         let store_manager = StoreKitManager::new();
-        store_manager.get_receipt_data().map_err(|e| format!("获取收据失败: {}", e))
+        store_manager.get_receipt_data().map_err(|e| t_format("receipt_data_failed", &[&e.to_string()]))
     }
     
     #[cfg(not(target_os = "macos"))]
     {
-        Err("App Store收据仅在macOS上可用".to_string())
+        Err(t("receipt_macos_only"))
     }
 }
 
@@ -441,7 +441,7 @@ async fn create_creem_session(
 ) -> Result<subscription::CreemSessionResponse, String> {
     let subscription_plan = match plan.as_str() {
         "lifetime" => SubscriptionPlan::Lifetime,
-        _ => return Err("无效的订阅计划".to_string()),
+        _ => return Err(t("invalid_subscription_plan")),
     };
 
     // 先克隆订阅数据，避免跨异步边界持有锁
@@ -481,8 +481,8 @@ async fn check_creem_payment_status(
             if !payment_status.user_packages.is_empty() {
                 let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                     .builder()
-                    .title("购买成功")
-                    .body("感谢您购买 FileSortify！现在可以无限制使用所有功能。")
+                    .title(&t("purchase_success_title"))
+                    .body(&t("purchase_success_body"))
                     .show();
             }
 
@@ -494,7 +494,7 @@ async fn check_creem_payment_status(
 
             Ok(payment_status)
         }
-        Err(e) => Err(format!("检查支付状态失败: {}", e))
+        Err(e) => Err(t_format("check_payment_status_failed", &[&e.to_string()]))
     }
 }
 
@@ -512,7 +512,7 @@ async fn open_creem_payment_page(
     use tauri_plugin_opener::OpenerExt;
     
     if let Err(e) = app_handle.opener().open_url(&session_response.checkout_url, None::<String>) {
-        return Err(format!("打开支付页面失败: {}", e));
+        return Err(t_format("open_payment_page_failed", &[&e.to_string()]));
     }
 
     Ok(session_response.user_package.id)
@@ -527,8 +527,8 @@ async fn set_webhook_server_url(
     let mut subscription = state.subscription.lock().await;
     
     match subscription.set_webhook_server_url(url) {
-        Ok(_) => Ok("Webhook 服务器 URL 已更新".to_string()),
-        Err(e) => Err(format!("更新 URL 失败: {}", e))
+        Ok(_) => Ok(t("webhook_url_updated")),
+        Err(e) => Err(t_format("update_url_failed", &[&e.to_string()]))
     }
 }
 
@@ -549,7 +549,7 @@ async fn show_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
         let _ = window.set_focus();
         Ok(())
     } else {
-        Err("找不到主窗口".to_string())
+        Err(t("main_window_not_found"))
     }
 }
 
@@ -560,7 +560,7 @@ async fn hide_main_window(app_handle: tauri::AppHandle) -> Result<(), String> {
         let _ = window.hide();
         Ok(())
     } else {
-        Err("找不到主窗口".to_string())
+        Err(t("main_window_not_found"))
     }
 }
 
@@ -790,8 +790,8 @@ fn main() {
                         // 显示通知
                         let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
                             .builder()
-                            .title("File Sortify")
-                            .body("应用已最小化到系统托盘")
+                            .title(&t("app_minimized_title"))
+                            .body(&t("app_minimized_body"))
                             .show();
                     }
                     _ => {}
@@ -814,7 +814,7 @@ fn main() {
                         // 加载更新调度器配置并启动后台任务
                         if let Ok(update_config) = updater::scheduler::UpdateSchedulerConfig::load() {
                             if update_config.enabled {
-                                log::info!("启动更新调度器，检查间隔: {} 小时", update_config.check_interval_hours);
+                                log::info!("{}", t_format("updater_started", &[&update_config.check_interval_hours.to_string()]));
                                 updater::scheduler::UpdateScheduler::start_background_task(update_config, app_handle_clone);
                             }
                         }

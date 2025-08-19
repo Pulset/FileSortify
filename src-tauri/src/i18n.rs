@@ -53,7 +53,6 @@ lazy_static! {
         en.insert("monitoring_started_title", "File Monitoring Started");
         en.insert("monitoring_started_body", "Monitoring folder: {}");
         
-        // 在英文翻译部分添加
         // 设置相关
         en.insert("enable_autostart_failed", "Failed to enable auto start: {}");
         en.insert("disable_autostart_failed", "Failed to disable auto start: {}");
@@ -95,6 +94,52 @@ lazy_static! {
         en.insert("category_code", "Code");
         en.insert("category_fonts", "Fonts");
         en.insert("category_others", "Others");
+        
+        // 新增的翻译键
+        en.insert("invalid_subscription_plan", "Invalid subscription plan");
+        en.insert("purchase_success_title", "Purchase Successful");
+        en.insert("purchase_success_body", "Thank you for purchasing FileSortify! You can now use all features without restrictions.");
+        en.insert("purchase_activation_success", "Purchase activated successfully");
+        en.insert("purchase_activation_failed", "Failed to activate purchase: {}");
+        en.insert("subscription_cancelled_title", "Subscription Cancelled");
+        en.insert("subscription_cancelled_body", "Your subscription has been successfully cancelled");
+        en.insert("subscription_cancelled", "Subscription cancelled");
+        en.insert("cancel_subscription_failed", "Failed to cancel subscription: {}");
+        en.insert("apple_receipt_verify_failed_format", "Failed to verify Apple receipt: {}");
+        en.insert("subscription_status_refreshed", "Subscription status refreshed");
+        en.insert("refresh_subscription_failed", "Failed to refresh subscription status: {}");
+        en.insert("apple_purchase_macos_only_format", "App Store purchases are only available on macOS");
+        en.insert("storekit_init_failed", "Failed to initialize StoreKit: {}");
+        en.insert("restore_purchases_failed", "Failed to restore purchases: {}");
+        en.insert("purchase_restore_started", "Purchase restoration process started");
+        en.insert("receipt_data_failed", "Failed to get receipt data: {}");
+        en.insert("receipt_macos_only", "App Store receipts are only available on macOS");
+        en.insert("create_payment_session_failed", "Failed to create payment session: {}");
+        en.insert("check_payment_status_failed", "Failed to check payment status: {}");
+        en.insert("open_payment_page_failed", "Failed to open payment page: {}");
+        en.insert("webhook_url_updated", "Webhook server URL updated");
+        en.insert("update_url_failed", "Failed to update URL: {}");
+        en.insert("app_minimized_title", "File Sortify");
+        en.insert("app_minimized_body", "Application minimized to system tray");
+        en.insert("updater_started", "Update scheduler started, check interval: {} hours");
+        // file_organizer keys
+        en.insert("organized_folder_name", "Organized Files");
+        en.insert("skip_unmatched_file", "Skip unmatched file: {} (left in place)");
+        en.insert("organize_complete_moved_count", "Organization complete, moved {} files");
+        en.insert("monitor_stop_signal_received", "Received stop monitoring signal, exiting monitor thread");
+        en.insert("file_create_event_detected", "File create event detected, count: {}");
+        en.insert("file_recently_processed_skip", "File {:?} processed {:?} ago, skipping");
+        en.insert("start_processing_file", "Start processing file: {:?}");
+        en.insert("new_file_categorized", "New file categorized: {} -> {}");
+        en.insert("move_file_failed", "Failed to move file: {:?}");
+        en.insert("new_file_unmatched", "New file unmatched, left in place: {:?}");
+        en.insert("event_process_error", "Event processing error: {:?}");
+        en.insert("monitor_error", "Monitor error: {:?}");
+        en.insert("monitor_started", "File monitoring started");
+        en.insert("monitor_stop_signal_sent", "Stop monitoring signal sent");
+        en.insert("join_monitor_thread_error", "Error while joining monitor thread: {:?}");
+        en.insert("monitor_stopped", "File monitoring stopped");
+        en.insert("move_file_success", "Moved file: {} -> {}");
         
         // 中文翻译
         let mut zh = HashMap::new();
@@ -159,6 +204,52 @@ lazy_static! {
         zh.insert("monitoring_started_title", "文件监控已启动");
         zh.insert("monitoring_started_body", "正在监控文件夹: {}");
         
+        // 新增的翻译键
+        zh.insert("invalid_subscription_plan", "无效的订阅计划");
+        zh.insert("purchase_success_title", "购买成功");
+        zh.insert("purchase_success_body", "感谢您购买 FileSortify！现在可以无限制使用所有功能。");
+        zh.insert("purchase_activation_success", "购买激活成功");
+        zh.insert("purchase_activation_failed", "激活购买失败: {}");
+        zh.insert("subscription_cancelled_title", "订阅已取消");
+        zh.insert("subscription_cancelled_body", "您的订阅已成功取消");
+        zh.insert("subscription_cancelled", "订阅已取消");
+        zh.insert("cancel_subscription_failed", "取消订阅失败: {}");
+        zh.insert("apple_receipt_verify_failed_format", "验证Apple收据失败: {}");
+        zh.insert("subscription_status_refreshed", "订阅状态已刷新");
+        zh.insert("refresh_subscription_failed", "刷新订阅状态失败: {}");
+        zh.insert("apple_purchase_macos_only_format", "App Store内购仅在macOS上可用");
+        zh.insert("storekit_init_failed", "初始化StoreKit失败: {}");
+        zh.insert("restore_purchases_failed", "恢复购买失败: {}");
+        zh.insert("purchase_restore_started", "已启动购买恢复流程");
+        zh.insert("receipt_data_failed", "获取收据失败: {}");
+        zh.insert("receipt_macos_only", "App Store收据仅在macOS上可用");
+        zh.insert("create_payment_session_failed", "创建支付会话失败: {}");
+        zh.insert("check_payment_status_failed", "检查支付状态失败: {}");
+        zh.insert("open_payment_page_failed", "打开支付页面失败: {}");
+        zh.insert("webhook_url_updated", "Webhook 服务器 URL 已更新");
+        zh.insert("update_url_failed", "更新 URL 失败: {}");
+        zh.insert("app_minimized_title", "File Sortify");
+        zh.insert("app_minimized_body", "应用已最小化到系统托盘");
+        zh.insert("updater_started", "启动更新调度器，检查间隔: {} 小时");
+        // file_organizer keys
+        zh.insert("organized_folder_name", "已分类文件");
+        zh.insert("skip_unmatched_file", "跳过未匹配文件: {} (保持在原地)");
+        zh.insert("organize_complete_moved_count", "整理完成，共移动 {} 个文件");
+        zh.insert("monitor_stop_signal_received", "收到停止监控信号，退出监控线程");
+        zh.insert("file_create_event_detected", "检测到文件创建事件，文件数量: {}");
+        zh.insert("file_recently_processed_skip", "文件 {:?} 在 {:?} 前已处理过，跳过");
+        zh.insert("start_processing_file", "开始处理文件: {:?}");
+        zh.insert("new_file_categorized", "新文件已分类: {} -> {}");
+        zh.insert("move_file_failed", "移动文件失败: {:?}");
+        zh.insert("new_file_unmatched", "新文件未匹配分类，保持在原地: {:?}");
+        zh.insert("event_process_error", "事件处理错误: {:?}");
+        zh.insert("monitor_error", "监控错误: {:?}");
+        zh.insert("monitor_started", "文件监控已启动");
+        zh.insert("monitor_stop_signal_sent", "已发送停止监控信号");
+        zh.insert("join_monitor_thread_error", "等待监控线程结束时出错: {:?}");
+        zh.insert("monitor_stopped", "文件监控已停止");
+        zh.insert("move_file_success", "移动文件: {} -> {}");
+        
         translations.insert(Language::English, en);
         translations.insert(Language::Chinese, zh);
         
@@ -197,7 +288,12 @@ pub fn t_format(key: &str, args: &[&str]) -> String {
     let mut result = template.clone();
     
     for (i, arg) in args.iter().enumerate() {
+        // 支持 {0} 风格
         result = result.replace(&format!("{{{}}}", i), arg);
+        // 兼容 {} 顺序占位符，每次只替换一个
+        if result.contains("{}") {
+            result = result.replacen("{}", arg, 1);
+        }
     }
     
     result

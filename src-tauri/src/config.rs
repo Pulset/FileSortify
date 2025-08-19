@@ -52,7 +52,7 @@ impl Config {
     }
     
     pub fn remove_category(&mut self, name: &str) -> bool {
-        if name != "其他" {
+        if name != t("category_others") {
             self.categories.remove(name).is_some()
         } else {
             false

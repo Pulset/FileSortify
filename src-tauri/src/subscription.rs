@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use chrono::{DateTime, Utc, Duration};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use crate::i18n::t;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SubscriptionPlan {
@@ -183,7 +184,7 @@ impl Subscription {
                 self.subscription_start_date = Some(now);
                 self.subscription_end_date = None; // 买断版本没有过期时间
             }
-            SubscriptionPlan::Free => return Err("无法激活免费计划".into()),
+            SubscriptionPlan::Free => return Err("Cannot activate free plan".into()),
         }
         
         self.save()?;
@@ -243,13 +244,13 @@ impl Subscription {
     /// 验证Apple订阅收据 (已禁用，仅保留兼容性)
     pub async fn verify_apple_receipt(&mut self, _receipt_data: String) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Apple Store 功能已禁用，直接返回错误
-        Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
+        Err(t("payment_disabled").into())
     }
 
     /// 刷新Apple订阅状态 (已禁用，仅保留兼容性)
     pub async fn refresh_apple_subscription(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         // Apple Store 功能已禁用，直接返回错误
-        Err("Apple Store 功能已禁用，请使用 Creem 支付".into())
+        Err(t("payment_disabled").into())
     }
 
     /// 检查是否需要刷新订阅状态
