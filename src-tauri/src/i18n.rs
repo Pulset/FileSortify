@@ -45,7 +45,7 @@ lazy_static! {
         
         // 成功消息
         en.insert("config_saved", "Configuration saved successfully");
-        en.insert("files_organized", "Successfully organized {} files");
+        en.insert("files_organized", "Successfully organized {0} files");
         
         // 通知
         en.insert("monitoring_stopped_title", "File Monitoring Stopped");
@@ -157,7 +157,7 @@ lazy_static! {
         
         // 成功消息
         zh.insert("config_saved", "配置保存成功");
-        zh.insert("files_organized", "成功整理了 {} 个文件");
+        zh.insert("files_organized", "成功整理了 {0} 个文件");
         
         // 设置相关
         zh.insert("enable_autostart_failed", "启用开机启动失败: {}");
