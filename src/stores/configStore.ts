@@ -3,6 +3,34 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Config } from '../types';
 import { tauriAPI } from '../utils/tauri';
 import { DEFAULT_CONFIG } from '../utils/defaultConfig';
+import zh from '../locales/zh.json';
+import en from '../locales/en.json';
+
+// 轻量级翻译工具（供非 React 环境使用）
+type Lang = 'en' | 'zh';
+const dictionaries = { en, zh } as const;
+const getCurrentLanguage = (): Lang => {
+  const saved = (localStorage.getItem('app-language') ||
+    localStorage.getItem('language')) as Lang | null;
+  return saved === 'zh' ? 'zh' : 'en';
+};
+const t = (key: string, params?: Record<string, any>): string => {
+  const lang = getCurrentLanguage();
+  const dict: any = dictionaries[lang];
+  const parts = key.split('.');
+  let value: any = dict;
+  for (const p of parts) {
+    value = value?.[p];
+    if (value === undefined) return key;
+  }
+  if (typeof value !== 'string') return key;
+  if (params) {
+    return value.replace(/\{\{(\w+)\}\}/g, (match, k) =>
+      params && k in params ? String(params[k]) : match
+    );
+  }
+  return value;
+};
 
 interface ConfigState {
   config: Config;
@@ -68,7 +96,7 @@ export const useConfigStore = create<ConfigState>()(
         const { config, saveConfig } = get();
 
         if (config.categories[name]) {
-          throw new Error('该分类名称已存在');
+          throw new Error(t('errors.categoryNameExists'));
         }
 
         const normalizedExtensions = extensions
@@ -107,11 +135,11 @@ export const useConfigStore = create<ConfigState>()(
           : `.${extension}`;
 
         if (!/^\.[\w]+$/.test(normalizedExt)) {
-          throw new Error('请输入有效的扩展名格式 (如: .mp4)');
+          throw new Error(t('errors.extensionFormatInvalid'));
         }
 
         if (config.categories[categoryName]?.includes(normalizedExt)) {
-          throw new Error('该扩展名已存在');
+          throw new Error(t('errors.extensionExists'));
         }
 
         const newConfig = {

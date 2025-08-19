@@ -168,6 +168,11 @@
     "categoryAdded": "Successfully added category: {{name}}, containing {{count}} extensions",
     "categoryDeleted": "Successfully deleted category: {{name}}"
   },
+  "paths": {
+    "downloadsFolder": "Downloads",
+    "migratedDefaultDownloads": "Default Downloads Folder",
+    "unnamedPathWithIndex": "Path {{index}}"
+  },
   "errors": {
     "selectFolderFirst": "Please select a folder first",
     "organizationFailed": "File organization failed",
@@ -185,7 +190,13 @@
     "subscriptionStartFailed": "Failed to start subscription",
     "restorePurchasesFailed": "Failed to restore purchases",
     "cancelSubscriptionFailed": "Failed to cancel subscription",
-    "loadConfigFailed": "Failed to load configuration"
+    "loadConfigFailed": "Failed to load configuration",
+    "categoryNameExists": "Category name already exists",
+    "extensionFormatInvalid": "Please enter a valid extension format (e.g.: .mp4)",
+    "extensionExists": "The extension already exists",
+    "pathRequired": "Path cannot be empty",
+    "pathExists": "The path already exists",
+    "pathNotFound": "Path not found"
   },
   "alerts": {
     "deleteCategoryConfirm": "Are you sure you want to delete category \"{{category}}\"?",

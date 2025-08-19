@@ -204,7 +204,6 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
     );
   }
 
-  console.log('paths', paths);
   return (
     <div className='view active'>
       <div className='view-header'>

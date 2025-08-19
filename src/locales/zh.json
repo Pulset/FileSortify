@@ -64,6 +64,11 @@
     "confirmDeletePath": "确定要删除路径 \"{{name}}\" 吗？",
     "confirmDelete": "确认删除"
   },
+  "paths": {
+    "downloadsFolder": "下载文件夹",
+    "migratedDefaultDownloads": "默认下载文件夹",
+    "unnamedPathWithIndex": "路径 {{index}}"
+  },
   "rules": {
     "title": "分类规则",
     "description": "管理文件分类规则和自定义配置",
@@ -185,7 +190,13 @@
     "subscriptionStartFailed": "启动订阅失败",
     "restorePurchasesFailed": "恢复购买失败",
     "cancelSubscriptionFailed": "取消订阅失败",
-    "loadConfigFailed": "加载配置失败"
+    "loadConfigFailed": "加载配置失败",
+    "categoryNameExists": "该分类名称已存在",
+    "extensionFormatInvalid": "请输入有效的扩展名格式 (如: .mp4)",
+    "extensionExists": "该扩展名已存在",
+    "pathRequired": "路径不能为空",
+    "pathExists": "该路径已存在",
+    "pathNotFound": "路径不存在"
   },
   "alerts": {
     "deleteCategoryConfirm": "确定要删除分类 \"{{category}}\" 吗？",

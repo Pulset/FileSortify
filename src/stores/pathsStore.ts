@@ -3,6 +3,34 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { PathConfig } from '../types';
 import { tauriAPI } from '../utils/tauri';
 import { useConfigStore } from './configStore';
+import zh from '../locales/zh.json';
+import en from '../locales/en.json';
+
+// 轻量级翻译工具（供非 React 环境使用）
+type Lang = 'en' | 'zh';
+const dictionaries = { en, zh } as const;
+const getCurrentLanguage = (): Lang => {
+  const saved = (localStorage.getItem('app-language') ||
+    localStorage.getItem('language')) as Lang | null;
+  return saved === 'zh' ? 'zh' : 'en';
+};
+const t = (key: string, params?: Record<string, any>): string => {
+  const lang = getCurrentLanguage();
+  const dict: any = dictionaries[lang];
+  const parts = key.split('.');
+  let value: any = dict;
+  for (const p of parts) {
+    value = value?.[p];
+    if (value === undefined) return key;
+  }
+  if (typeof value !== 'string') return key;
+  if (params) {
+    return value.replace(/\{\{(\w+)\}\}/g, (match, k) =>
+      params && k in params ? String(params[k]) : match
+    );
+  }
+  return value;
+};
 
 interface PathsState {
   paths: PathConfig[];
@@ -60,7 +88,7 @@ export const usePathsStore = create<PathsState>()(
               const migratedPath: PathConfig = {
                 id: 'migrated-default',
                 path: config.downloads_folder,
-                name: '默认下载文件夹',
+                name: t('paths.migratedDefaultDownloads'),
                 isMonitoring: false,
                 autoOrganize: config.auto_organize || false,
                 stats: {
@@ -88,7 +116,7 @@ export const usePathsStore = create<PathsState>()(
                 const defaultPath: PathConfig = {
                   id: 'default-downloads',
                   path: defaultFolder,
-                  name: '下载文件夹',
+                  name: t('paths.downloadsFolder'),
                   isMonitoring: false,
                   autoOrganize: false,
                   stats: {
@@ -128,17 +156,19 @@ export const usePathsStore = create<PathsState>()(
         const { paths, savePaths, generatePathId } = get();
 
         if (!path.trim()) {
-          throw new Error('路径不能为空');
+          throw new Error(t('errors.pathRequired'));
         }
 
         if (paths.some((p) => p.path === path)) {
-          throw new Error('该路径已存在');
+          throw new Error(t('errors.pathExists'));
         }
 
         const newPath: PathConfig = {
           id: generatePathId(),
           path: path.trim(),
-          name: name?.trim() || `路径 ${paths.length + 1}`,
+          name:
+            name?.trim() ||
+            t('paths.unnamedPathWithIndex', { index: paths.length + 1 }),
           isMonitoring: false,
           autoOrganize: false,
           stats: {
@@ -158,14 +188,14 @@ export const usePathsStore = create<PathsState>()(
         const { paths, savePaths } = get();
         const pathToRemove = paths.find((p) => p.id === pathId);
         if (!pathToRemove) {
-          throw new Error('路径不存在');
+          throw new Error(t('errors.pathNotFound'));
         }
 
         if (pathToRemove.isMonitoring) {
           try {
             await tauriAPI.toggleMonitoring(pathToRemove.path);
           } catch (error) {
-            console.warn('停止监控失败:', error);
+            console.warn('Failed to stop monitoring:', error);
           }
         }
 
@@ -177,7 +207,7 @@ export const usePathsStore = create<PathsState>()(
         const { paths, savePaths } = get();
         const pathIndex = paths.findIndex((p) => p.id === pathId);
         if (pathIndex === -1) {
-          throw new Error('路径不存在');
+          throw new Error(t('errors.pathNotFound'));
         }
 
         const updatedPaths = [...paths];
@@ -190,7 +220,7 @@ export const usePathsStore = create<PathsState>()(
         const { paths, updatePath } = get();
         const path = paths.find((p) => p.id === pathId);
         if (!path) {
-          throw new Error('路径不存在');
+          throw new Error(t('errors.pathNotFound'));
         }
 
         try {
@@ -217,7 +247,7 @@ export const usePathsStore = create<PathsState>()(
         const { paths, updatePath } = get();
         const path = paths.find((p) => p.id === pathId);
         if (!path) {
-          throw new Error('路径不存在');
+          throw new Error(t('errors.pathNotFound'));
         }
 
         try {
@@ -235,13 +265,16 @@ export const usePathsStore = create<PathsState>()(
           await updatePath(pathId, updates);
 
           await tauriAPI.sendNotification(
-            '文件整理完成',
-            `${path.name}: ${result}`
+            t('messages.organizationComplete'),
+            t('organize.filesOrganizedCount', {
+              name: path.name,
+              count: fileCount,
+            })
           );
 
           return fileCount;
         } catch (error) {
-          throw error
+          throw error;
         }
       },
 
@@ -262,17 +295,17 @@ export const usePathsStore = create<PathsState>()(
             filesOrganized: total.filesOrganized + path.stats.filesOrganized,
             lastOrganized:
               path.stats.lastOrganized &&
-                (!total.lastOrganized ||
-                  new Date(path.stats.lastOrganized) >
+              (!total.lastOrganized ||
+                new Date(path.stats.lastOrganized) >
                   new Date(total.lastOrganized))
                 ? path.stats.lastOrganized
                 : total.lastOrganized,
             monitoringSince: paths.some((p) => p.isMonitoring)
               ? paths
-                .filter((p) => p.isMonitoring)
-                .map((p) => p.stats.monitoringSince)
-                .filter(Boolean)
-                .sort()[0] || null
+                  .filter((p) => p.isMonitoring)
+                  .map((p) => p.stats.monitoringSince)
+                  .filter(Boolean)
+                  .sort()[0] || null
               : null,
           }),
           {

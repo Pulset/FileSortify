@@ -2,7 +2,7 @@ import { Config } from '../types';
 
 export const DEFAULT_CONFIG: Config = {
   categories: {
-    图片: [
+    Images: [
       '.jpg',
       '.jpeg',
       '.png',
@@ -15,7 +15,7 @@ export const DEFAULT_CONFIG: Config = {
       '.raw',
       '.heic',
     ],
-    视频: [
+    Video: [
       '.mp4',
       '.avi',
       '.mkv',
@@ -28,7 +28,7 @@ export const DEFAULT_CONFIG: Config = {
       '.ts',
       '.mts',
     ],
-    音频: [
+    Audio: [
       '.mp3',
       '.wav',
       '.flac',
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: Config = {
       '.opus',
       '.aiff',
     ],
-    文档: [
+    Documents: [
       '.pdf',
       '.doc',
       '.docx',
@@ -50,9 +50,9 @@ export const DEFAULT_CONFIG: Config = {
       '.epub',
       '.mobi',
     ],
-    表格: ['.xls', '.xlsx', '.csv', '.ods', '.numbers'],
-    演示文稿: ['.ppt', '.pptx', '.odp', '.key'],
-    压缩包: [
+    Spreadsheets: ['.xls', '.xlsx', '.csv', '.ods', '.numbers'],
+    Presentations: ['.ppt', '.pptx', '.odp', '.key'],
+    Archives: [
       '.zip',
       '.rar',
       '.7z',
@@ -63,8 +63,17 @@ export const DEFAULT_CONFIG: Config = {
       '.dmg',
       '.iso',
     ],
-    程序: ['.exe', '.msi', '.app', '.deb', '.rpm', '.pkg', '.dmg', '.appimage'],
-    代码: [
+    Programs: [
+      '.exe',
+      '.msi',
+      '.app',
+      '.deb',
+      '.rpm',
+      '.pkg',
+      '.dmg',
+      '.appimage',
+    ],
+    Code: [
       '.js',
       '.html',
       '.css',
@@ -79,7 +88,7 @@ export const DEFAULT_CONFIG: Config = {
       '.swift',
       '.kt',
     ],
-    字体: ['.ttf', '.otf', '.woff', '.woff2', '.eot'],
-    其他: [],
+    Fonts: ['.ttf', '.otf', '.woff', '.woff2', '.eot'],
+    Others: [],
   },
 };
