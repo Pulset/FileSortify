@@ -26,6 +26,7 @@ pub struct FileOrganizedEvent {
     pub file_name: String,
     pub category: String,
     pub timestamp: String,
+    pub folder_path: String,
 }
 
 #[derive(Debug)]
@@ -85,7 +86,7 @@ impl fileSortify {
             let log_message = LogMessage {
                 message: message.to_string(),
                 log_type: log_type.to_string(),
-                timestamp: chrono::Local::now().format("%H:%M:%S").to_string(),
+                timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
             };
             
             if let Err(e) = app_handle.emit("log-message", &log_message) {
@@ -107,9 +108,9 @@ impl fileSortify {
             let event = FileOrganizedEvent {
                 file_name: file_name.to_string(),
                 category: category.to_string(),
-                timestamp: chrono::Local::now().format("%H:%M:%S").to_string(),
+                timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
+                folder_path: self.downloads_path.to_string_lossy().to_string(),
             };
-            
             if let Err(e) = app_handle.emit("file-organized", &event) {
                 eprintln!("Failed to emit file organized event: {}", e);
             }
@@ -157,35 +158,36 @@ impl fileSortify {
         let (tx, rx) = channel();
         let mut watcher = notify::recommended_watcher(tx)?;
         watcher.watch(&self.downloads_path, RecursiveMode::NonRecursive)?;
-        
+
         let stop_signal = Arc::new(AtomicBool::new(false));
         self.monitoring_stop_signal = Some(stop_signal.clone());
-        
+
         let config = self.config.clone();
         let organized_path = self.organized_path.clone();
         let app_handle = self.app_handle.clone();
-        
+        let downloads_path = self.downloads_path.clone();
+
         // 用于去重的文件处理记录
         let mut last_processed: std::collections::HashMap<PathBuf, std::time::Instant> = std::collections::HashMap::new();
-        
+
         let handle = std::thread::spawn(move || {
             // watcher必须在这个线程中保持活跃
             let _watcher = watcher;
-            
+
             // 创建一个辅助函数来发送日志
             let emit_log = |message: &str, log_type: &str| {
                 if let Some(app_handle) = &app_handle {
                     let log_message = LogMessage {
                         message: message.to_string(),
                         log_type: log_type.to_string(),
-                        timestamp: chrono::Local::now().format("%H:%M:%S").to_string(),
+                        timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
                     };
-                    
+
                     if let Err(e) = app_handle.emit("log-message", &log_message) {
                         eprintln!("Failed to emit log message: {}", e);
                     }
                 }
-                
+
                 // 同时保留原有的日志输出
                 match log_type {
                     "error" => log::error!("{}", message),
@@ -194,7 +196,7 @@ impl fileSortify {
                     _ => log::info!("{}", message),
                 }
             };
-            
+
             loop {
                 // 检查停止信号
                 if stop_signal.load(Ordering::Relaxed) {
@@ -210,62 +212,62 @@ impl fileSortify {
                                     EventKind::Create(_) => {
                                         emit_log(&t_format("file_create_event_detected", &[&paths.len().to_string()]), "info");
                                         for path in paths {
-                                    if path.is_file() {
-                                        if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                                            // 跳过隐藏文件和临时文件
-                                            if file_name.starts_with('.') || file_name.ends_with(".tmp") {
-                                                continue;
-                                            }
-                                        }
-                                        
-                                        // 检查是否在短时间内已经处理过这个文件（去重）
-                                        let now = std::time::Instant::now();
-                                        if let Some(last_time) = last_processed.get(&path) {
-                                            let duration = now.duration_since(*last_time);
-                                            emit_log(&t_format("file_recently_processed_skip", &[&format!("{:?}", path.file_name()), &format!("{:?}", duration)]), "info");
-                                            if duration < Duration::from_secs(5) {
-                                                continue; // 跳过重复处理
-                                            }
-                                        }
-                                        emit_log(&t_format("start_processing_file", &[&format!("{:?}", path.file_name())]), "info");
-                                        last_processed.insert(path.clone(), now);
-                                        
-                                        // 等待文件写入完成
-                                        std::thread::sleep(Duration::from_secs(1));
-                                        
-                                        if let Some(category) = Self::get_file_category_static(&path, &config) {
-                                            match Self::move_file_static(&path, &category, &organized_path) {
-                                                Ok(_) => {
-                                                    if let Some(file_name) = path.file_name() {
-                                                        if let Some(file_name_str) = file_name.to_str() {
-                                                            emit_log(&t_format("new_file_categorized", &[file_name_str, &category]), "success");
-                                                            
-                                                            // 发送文件整理事件
-                                                            if let Some(app_handle) = &app_handle {
-                                                                let event = FileOrganizedEvent {
-                                                                    file_name: file_name_str.to_string(),
-                                                                    category: category.clone(),
-                                                                    timestamp: chrono::Local::now().format("%H:%M:%S").to_string(),
-                                                                };
-                                                                
-                                                                if let Err(e) = app_handle.emit("file-organized", &event) {
-                                                                    eprintln!("Failed to emit file organized event: {}", e);
+                                            if path.is_file() {
+                                                if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
+                                                    // 跳过隐藏文件和临时文件
+                                                    if file_name.starts_with('.') || file_name.ends_with(".tmp") {
+                                                        continue;
+                                                    }
+                                                }
+
+                                                // 检查是否在短时间内已经处理过这个文件（去重）
+                                                let now = std::time::Instant::now();
+                                                if let Some(last_time) = last_processed.get(&path) {
+                                                    let duration = now.duration_since(*last_time);
+                                                    emit_log(&t_format("file_recently_processed_skip", &[&format!("{:?}", path.file_name()), &format!("{:?}", duration)]), "info");
+                                                    if duration < Duration::from_secs(5) {
+                                                        continue; // 跳过重复处理
+                                                    }
+                                                }
+                                                emit_log(&t_format("start_processing_file", &[&format!("{:?}", path.file_name())]), "info");
+                                                last_processed.insert(path.clone(), now);
+
+                                                // 等待文件写入完成
+                                                std::thread::sleep(Duration::from_secs(1));
+
+                                                if let Some(category) = Self::get_file_category_static(&path, &config) {
+                                                    match Self::move_file_static(&path, &category, &organized_path) {
+                                                        Ok(_) => {
+                                                            if let Some(file_name) = path.file_name() {
+                                                                if let Some(file_name_str) = file_name.to_str() {
+                                                                    emit_log(&t_format("new_file_categorized", &[file_name_str, &category]), "success");
+
+                                                                    // 发送文件整理事件
+                                                                    if let Some(app_handle) = &app_handle {
+                                                                        let event = FileOrganizedEvent {
+                                                                            file_name: file_name_str.to_string(),
+                                                                            category: category.clone(),
+                                                                            timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
+                                                                            folder_path: downloads_path.to_string_lossy().to_string(),
+                                                                        };
+                                                                        if let Err(e) = app_handle.emit("file-organized", &event) {
+                                                                            eprintln!("Failed to emit file organized event: {}", e);
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
                                                         }
+                                                        Err(e) => {
+                                                            emit_log(&t_format("move_file_failed", &[&format!("{:?}", e)]), "error");
+                                                        }
+                                                    }
+                                                } else {
+                                                    if let Some(file_name) = path.file_name() {
+                                                        emit_log(&t_format("new_file_unmatched", &[&format!("{:?}", file_name)]), "info");
                                                     }
                                                 }
-                                                Err(e) => {
-                                                    emit_log(&t_format("move_file_failed", &[&format!("{:?}", e)]), "error");
-                                                }
-                                            }
-                                        } else {
-                                            if let Some(file_name) = path.file_name() {
-                                                emit_log(&t_format("new_file_unmatched", &[&format!("{:?}", file_name)]), "info");
                                             }
                                         }
-                                    }
-                                }
                                     }
                                     _ => {
                                         // emit_log(&format!("忽略其他类型事件: {:?}", kind), "info");
@@ -288,7 +290,7 @@ impl fileSortify {
                 }
             }
         });
-        
+
         self.monitoring_thread = Some(handle);
         self.emit_log(&t("monitor_started"), "success");
         Ok(())

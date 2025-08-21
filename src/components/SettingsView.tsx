@@ -578,21 +578,13 @@ const SettingsView: React.FC = () => {
                 style={{
                   width: '48px',
                   height: '48px',
-                  background: 'rgba(255,255,255,0.2)',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <svg
-                  width='24'
-                  height='24'
-                  viewBox='0 0 24 24'
-                  fill='currentColor'
-                >
-                  <path d='M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z' />
-                </svg>
+                <img src='../../app-icon.png' alt='' />
               </div>
               <div style={{ flex: 1 }}>
                 <div
@@ -673,7 +665,7 @@ const SettingsView: React.FC = () => {
                     t('settings.about.features.realTimeMonitoring'),
                     t('settings.about.features.customRules'),
                     t('settings.about.features.detailedReports'),
-                    t('settings.about.features.desktopNotifications'),
+                    // t('settings.about.features.desktopNotifications'),
                   ].map((feature, index) => (
                     <div
                       key={index}
@@ -688,6 +680,40 @@ const SettingsView: React.FC = () => {
                       <span>{feature}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#1a1a1a',
+                    marginBottom: '8px',
+                  }}
+                >
+                  {t('settings.about.contactUs')}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#6b7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <a href='mailto:support@picasso-designs.com'>
+                      support@picasso-designs.com
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

@@ -284,7 +284,8 @@
         "customRules": "🎯 自定义分类规则",
         "detailedReports": "📊 详细统计报告",
         "desktopNotifications": "🔔 桌面通知提醒"
-      }
+      },
+      "contactUs": "联系我们"
     },
     "notifications": {
       "title": "通知",

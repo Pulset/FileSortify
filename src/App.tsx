@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ViewType } from './types';
 import { tauriAPI } from './utils/tauri';
-import { listen } from '@tauri-apps/api/event';
 import {
   usePathsStore,
   useConfigStore,
@@ -29,7 +28,7 @@ function AppContent() {
   const { addLog } = useLoggerStore();
   const { config, loading: configLoading, loadConfig } = useConfigStore();
   const { paths, loadPaths, organizePathFiles } = usePathsStore();
-  const { stats, updateStatsFromPaths } = useStatsStore();
+  const { calculateStatsFromPaths } = useStatsStore();
 
   const handleOrganizeFiles = async (pathId: string) => {
     const path = paths.find((p) => p.id === pathId);
@@ -71,6 +70,7 @@ function AppContent() {
   }, [paths]);
 
   useEffect(() => {
+    const unListeners: any[] = [];
     const initializeApp = async () => {
       console.log('Starting app initialization...');
       const initialized = await tauriAPI.initialize();
@@ -90,19 +90,19 @@ function AppContent() {
           await Promise.all([loadConfig(), loadPaths()]);
           tauriAPI.canUseAppSecure();
           // 设置事件监听器
-          tauriAPI.listen('organize-files', () => {
-            handleBatchOrganizeFiles();
-          });
+          // tauriAPI.listen('organize-files', () => {
+          //   handleBatchOrganizeFiles();
+          // });
 
-          tauriAPI.listen('toggle-monitoring', () => {
-            // 这个事件现在由各个路径的监控状态处理
-            addLog(t('messages.monitoringStatusUpdated'), 'info');
-          });
+          // tauriAPI.listen('toggle-monitoring', () => {
+          //   // 这个事件现在由各个路径的监控状态处理
+          //   addLog(t('messages.monitoringStatusUpdated'), 'info');
+          // });
 
           // 监听文件整理事件来更新统计数据
-          tauriAPI.listen(
+          const unListen1 = tauriAPI.listen(
             'file-organized',
-            (event: {
+            async (event: {
               payload: {
                 file_name: string;
                 category: string;
@@ -110,22 +110,44 @@ function AppContent() {
                 folder_path?: string;
               };
             }) => {
+              const payload = event.payload;
               console.log('File organized event:', event);
               addLog(
                 t('messages.fileOrganized', {
-                  fileName: event.payload.file_name,
-                  category: event.payload.category,
+                  fileName: payload.file_name,
+                  category: payload.category,
                 }),
                 'success'
               );
+              // 自动统计到 pathsStore
+              if (payload.folder_path) {
+                const path = usePathsStore
+                  .getState()
+                  .paths.find((p) => p.path === payload.folder_path);
+                if (path) {
+                  // 更新 stats
+                  await usePathsStore.getState().updatePath(path.id, {
+                    stats: {
+                      ...path.stats,
+                      filesOrganized: (path.stats?.filesOrganized || 0) + 1,
+                      lastOrganized: payload.timestamp,
+                    },
+                  });
+                }
+              }
             }
           );
 
           // 监听更新相关事件
-          listen('update-available', (event: any) => {
-            addLog(t('messages.updateAvailable'), 'info');
-            setShowUpdateDialog(true);
-          });
+          const unListen2 = tauriAPI.listen(
+            'update-available',
+            (event: any) => {
+              addLog(t('messages.updateAvailable'), 'info');
+              setShowUpdateDialog(true);
+            }
+          );
+
+          unListeners.push(unListen1, unListen2);
         } catch (error) {
           addLog(
             t('errors.initializationFailed', {
@@ -140,26 +162,44 @@ function AppContent() {
     };
 
     initializeApp();
+    return () => {
+      console.log('Cleaning up event listeners...', unListeners);
+      // unListeners.forEach((unListen) => unListen());
+      Promise.all(unListeners)
+        .then(() => {
+          console.log('All event listeners cleaned up successfully');
+        })
+        .catch(() => {
+          console.warn('Error cleaning up event listeners');
+        });
+    };
   }, []);
 
-  // 当路径数据变化时，更新统计数据
-  useEffect(() => {
-    if (paths.length > 0) {
-      updateStatsFromPaths(paths);
-    }
-  }, [paths, updateStatsFromPaths]);
+  // 统计数据直接通过 paths 计算
+  const stats = calculateStatsFromPaths(paths);
 
   const handleToggleMonitoring = async () => {
-    // 计算监控路径数量
-    const monitoringPathsCount = stats.pathStats
-      ? Object.values(stats.pathStats).filter(
-          (pathStat) => pathStat.monitoringSince !== null
-        ).length
-      : 0;
-    addLog(
-      t('messages.monitoringStatus', { count: monitoringPathsCount }),
-      'info'
-    );
+    // 判断当前是否有任何路径正在监控
+    const anyMonitoring = paths.some((p) => p.isMonitoring);
+    // 切换所有路径的监控状态，并通知服务端
+    for (const path of paths) {
+      if (path.isMonitoring !== !anyMonitoring) {
+        const newState = await usePathsStore
+          .getState()
+          .togglePathMonitoring(path.id);
+        if (newState) {
+          addLog(
+            `🔍 ${t('organize.monitoringStartedFor', { name: path.name })}`,
+            'success'
+          );
+        } else {
+          addLog(
+            `⏹️ ${t('organize.monitoringStopped', { name: path.name })}`,
+            'info'
+          );
+        }
+      }
+    }
   };
 
   const renderCurrentView = () => {
@@ -168,13 +208,7 @@ function AppContent() {
         return (
           <Dashboard
             stats={stats}
-            isMonitoring={
-              stats.pathStats
-                ? Object.values(stats.pathStats).some(
-                    (pathStat) => pathStat.monitoringSince !== null
-                  )
-                : false
-            }
+            isMonitoring={paths.some((p) => p.isMonitoring)}
             onOrganizeFiles={handleBatchOrganizeFiles}
             onToggleMonitoring={handleToggleMonitoring}
           />

@@ -22,9 +22,10 @@ use settings::GeneralSettings;
 use autostart::AutoStart;
 
 // 全局状态
+use std::collections::HashMap;
+
 struct AppState {
-    organizer: Mutex<Option<fileSortify>>,
-    is_monitoring: Mutex<bool>,
+    organizers: Mutex<HashMap<String, fileSortify>>,
     subscription: Mutex<Subscription>,
     settings: Mutex<GeneralSettings>,
 }
@@ -49,16 +50,12 @@ async fn organize_files(
         }
     }
     
-    let mut organizer_guard = state.organizer.lock().await;
-
+    // 只临时创建 organizer，不插入 organizers HashMap
     match fileSortify::new(&folder_path) {
-        Ok(organizer) => {
-            let mut organizer = organizer.with_app_handle(app_handle);
+        Ok(mut organizer) => {
+            organizer = organizer.with_app_handle(app_handle.clone());
             match organizer.organize_existing_files() {
-                Ok(count) => {
-                    *organizer_guard = Some(organizer);
-                    Ok(t_format("files_organized", &[&count.to_string()]))
-                }
+                Ok(count) => Ok(t_format("files_organized", &[&count.to_string()])),
                 Err(e) => Err(t_format("organize_failed", &[&e.to_string()]))
             }
         }
@@ -81,15 +78,12 @@ async fn toggle_monitoring(
         }
     }
     
-    let mut is_monitoring = state.is_monitoring.lock().await;
-    let mut organizer_guard = state.organizer.lock().await;
+    let mut organizers = state.organizers.lock().await;
     
-    if *is_monitoring {
-        // 停止监控
-        if let Some(organizer) = organizer_guard.as_mut() {
-            organizer.stop_monitoring();
-        }
-        *is_monitoring = false;
+    if let Some(organizer) = organizers.get_mut(&folder_path) {
+        // 路径已经在监控，停止它
+        organizer.stop_monitoring();
+        organizers.remove(&folder_path);
         
         // 发送通知
         let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
@@ -100,27 +94,24 @@ async fn toggle_monitoring(
             
         Ok(false)
     } else {
-        // 开始监控
+        // 开始新的监控
         match fileSortify::new(&folder_path) {
-            Ok(organizer) => {
-                let mut organizer = organizer.with_app_handle(app_handle.clone());
-                match organizer.start_monitoring() {
-                    Ok(_) => {
-                        *organizer_guard = Some(organizer);
-                        *is_monitoring = true;
-                        
-                        // 发送通知
-                        let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
-                            .builder()
-                            .title(&t("monitoring_started_title"))
-                            .body(&t_format("monitoring_started_body", &[&folder_path]))
-                            .show();
-                            
-                        Ok(true)
-                    }
-                    Err(e) => Err(t_format("monitoring_start_failed", &[&e.to_string()]))
+            Ok(mut organizer) => {
+                organizer = organizer.with_app_handle(app_handle.clone());
+                if let Err(e) = organizer.start_monitoring() {
+                    return Err(t_format("monitoring_start_failed", &[&e.to_string()]));
                 }
-            }
+                
+                // 发送通知
+                let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
+                    .builder()
+                    .title(&t("monitoring_started_title"))
+                    .body(&t_format("monitoring_started_body", &[&folder_path]))
+                    .show();
+                    
+                organizers.insert(folder_path.clone(), organizer);
+                Ok(true)
+            },
             Err(e) => Err(t_format("init_failed", &[&e.to_string()]))
         }
     }
@@ -722,8 +713,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(AppState {
-            organizer: Mutex::new(None),
-            is_monitoring: Mutex::new(false),
+            organizers: Mutex::new(HashMap::new()),
             subscription: Mutex::new(subscription),
             settings: Mutex::new(settings),
         })

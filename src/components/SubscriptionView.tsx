@@ -22,11 +22,14 @@ const SubscriptionView: React.FC = () => {
     try {
       if (tauriAPI.isInitialized()) {
         const status = await tauriAPI.getSubscriptionStatus();
-        console.log({ status })
+        console.log({ status });
         setSubscription(status);
       }
     } catch (error: any) {
-      addLog(`❌ ${t('messages.loadingSubscriptionFailed')}: ${error?.message}`, 'error');
+      addLog(
+        `❌ ${t('messages.loadingSubscriptionFailed')}: ${error?.message}`,
+        'error'
+      );
     } finally {
       setLoading(false);
     }
@@ -40,35 +43,42 @@ const SubscriptionView: React.FC = () => {
     if (subscription.status === 'Trial') {
       const daysRemaining = subscription.trial_start_date
         ? Math.max(
-          0,
-          Math.floor(
-            (new Date(subscription.trial_start_date).getTime() +
-              3 * 24 * 60 * 60 * 1000 -
-              Date.now()) /
-            (24 * 60 * 60 * 1000)
+            0,
+            Math.floor(
+              (new Date(subscription.trial_start_date).getTime() +
+                3 * 24 * 60 * 60 * 1000 -
+                Date.now()) /
+                (24 * 60 * 60 * 1000)
+            )
           )
-        )
         : 0;
 
       return (
-        <div className='subscription-card trial mb-6'>
-          <div className='subscription-status'>🎁 {t('subscription.trialStatus')}</div>
-          <div className='subscription-details'>
-            {t('subscription.trialRemaining', { days: daysRemaining })}
-          </div>
-          {daysRemaining <= 1 && (
-            <div className='trial-warning mt-2'>
-              ⚠️ {t('subscription.trialWarning')}
+        <>
+          <div className='subscription-card trial mb-6'>
+            <div className='subscription-status'>
+              🎁 {t('subscription.trialStatus')}
             </div>
-          )}
-        </div>
+            <div className='subscription-details'>
+              {t('subscription.trialRemaining', { days: daysRemaining })}
+            </div>
+            {daysRemaining <= 1 && (
+              <div className='trial-warning mt-2'>
+                ⚠️ {t('subscription.trialWarning')}
+              </div>
+            )}
+          </div>
+          <CreemSubscriptionView onPaymentSuccess={loadSubscriptionStatus} />
+        </>
       );
     }
 
     if (subscription.status === 'Active') {
       return (
         <div className='subscription-card active mb-6'>
-          <div className='subscription-status'>✨ {t('subscription.activeStatus')}</div>
+          <div className='subscription-status'>
+            ✨ {t('subscription.activeStatus')}
+          </div>
           <div className='subscription-details'>
             {t('subscription.thankYouMessage')}
           </div>
@@ -80,12 +90,15 @@ const SubscriptionView: React.FC = () => {
     return (
       <>
         <div className='subscription-card expired mb-6'>
-          <div className='subscription-status'>❌ {t('subscription.expiredStatus')}</div>
-          <div className='subscription-details'>{t('subscription.expiredWarning')}</div>
+          <div className='subscription-status'>
+            ❌ {t('subscription.expiredStatus')}
+          </div>
+          <div className='subscription-details'>
+            {t('subscription.expiredWarning')}
+          </div>
         </div>
         <CreemSubscriptionView onPaymentSuccess={loadSubscriptionStatus} />
       </>
-
     );
   };
 

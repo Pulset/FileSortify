@@ -284,7 +284,8 @@
         "customRules": "🎯 Custom Classification Rules",
         "detailedReports": "📊 Detailed Statistics Reports",
         "desktopNotifications": "🔔 Desktop Notification Alerts"
-      }
+      },
+      "contactUs": "Contact us"
     },
     "notifications": {
       "title": "Notifications",
