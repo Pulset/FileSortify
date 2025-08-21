@@ -32,7 +32,6 @@ pub struct FileOrganizedEvent {
 #[derive(Debug)]
 pub struct fileSortify {
     pub downloads_path: PathBuf,
-    pub organized_path: PathBuf,
     pub config: Config,
     pub monitoring_stop_signal: Option<Arc<AtomicBool>>,
     pub monitoring_thread: Option<JoinHandle<()>>,
@@ -43,7 +42,6 @@ impl Clone for fileSortify {
     fn clone(&self) -> Self {
         Self {
             downloads_path: self.downloads_path.clone(),
-            organized_path: self.organized_path.clone(),
             config: self.config.clone(),
             monitoring_stop_signal: None, // 新实例不继承监控状态
             monitoring_thread: None, // 新实例不继承线程句柄
@@ -55,20 +53,9 @@ impl Clone for fileSortify {
 impl fileSortify {
     pub fn new(downloads_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let downloads_path = PathBuf::from(downloads_path);
-        
-        // 根据操作系统选择合适的文件夹名称
-        let folder_name = if cfg!(windows) {
-            "Organized Files"  // Windows使用英文名避免编码问题
-        } else {
-            "Organized Files"
-        };
-        
-        let organized_path = downloads_path.join(folder_name);
         let config = Config::load()?;
-        
         Ok(fileSortify {
             downloads_path,
-            organized_path,
             config,
             monitoring_stop_signal: None,
             monitoring_thread: None,
@@ -162,10 +149,9 @@ impl fileSortify {
         let stop_signal = Arc::new(AtomicBool::new(false));
         self.monitoring_stop_signal = Some(stop_signal.clone());
 
-        let config = self.config.clone();
-        let organized_path = self.organized_path.clone();
-        let app_handle = self.app_handle.clone();
-        let downloads_path = self.downloads_path.clone();
+    let config = self.config.clone();
+    let app_handle = self.app_handle.clone();
+    let downloads_path = self.downloads_path.clone();
 
         // 用于去重的文件处理记录
         let mut last_processed: std::collections::HashMap<PathBuf, std::time::Instant> = std::collections::HashMap::new();
@@ -236,7 +222,7 @@ impl fileSortify {
                                                 std::thread::sleep(Duration::from_secs(1));
 
                                                 if let Some(category) = Self::get_file_category_static(&path, &config) {
-                                                    match Self::move_file_static(&path, &category, &organized_path) {
+                                                    match Self::move_file_static(&path, &category, &downloads_path) {
                                                         Ok(_) => {
                                                             if let Some(file_name) = path.file_name() {
                                                                 if let Some(file_name_str) = file_name.to_str() {
@@ -318,20 +304,16 @@ impl fileSortify {
     }
     
     fn create_folders(&self) -> Result<(), Box<dyn std::error::Error>> {
-        if !self.organized_path.exists() {
-            fs::create_dir_all(&self.organized_path)?;
-        }
-        
+        // 直接在下载目录下生成分类文件夹
         for category in self.config.categories.keys() {
             if *category != t("category_others") {
-                let category_path = self.organized_path.join(category);
+                let category_path = self.downloads_path.join(category);
                 if !category_path.exists() {
                     fs::create_dir_all(&category_path)?;
                     self.emit_log(&t_format("create_folder", &[category]), "info");
                 }
             }
         }
-        
         Ok(())
     }
     
@@ -354,7 +336,7 @@ impl fileSortify {
     }
     
     fn move_file(&self, source_path: &Path, category: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        let result = Self::move_file_static(source_path, category, &self.organized_path);
+    let result = Self::move_file_static(source_path, category, &self.downloads_path);
         
         if result.is_ok() {
             if let Some(filename) = source_path.file_name() {
@@ -368,17 +350,14 @@ impl fileSortify {
         result
     }
     
-    fn move_file_static(source_path: &Path, category: &str, organized_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
+    fn move_file_static(source_path: &Path, category: &str, downloads_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
         let filename = source_path.file_name()
             .ok_or("Failed to get file name")?;
-        
-        let destination_folder = organized_path.join(category);
+        let destination_folder = downloads_path.join(category);
         let mut destination_path = destination_folder.join(filename);
-        
         // 如果目标文件已存在，添加数字后缀
         let mut counter = 1;
         let original_destination = destination_path.clone();
-        
         while destination_path.exists() {
             if let Some(stem) = original_destination.file_stem().and_then(|s| s.to_str()) {
                 if let Some(ext) = original_destination.extension().and_then(|e| e.to_str()) {
@@ -389,12 +368,10 @@ impl fileSortify {
             }
             counter += 1;
         }
-        
         fs::rename(source_path, &destination_path)?;
         // 注意：这里不发送日志，因为静态方法无法访问 app_handle
         // 日志会在调用方法中发送
         log::info!("Moved file: {:?} -> {}", filename, category);
-        
         Ok(true)
     }
 }

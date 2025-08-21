@@ -89,6 +89,5 @@ export const DEFAULT_CONFIG: Config = {
       '.kt',
     ],
     Fonts: ['.ttf', '.otf', '.woff', '.woff2', '.eot'],
-    Others: [],
   },
 };
