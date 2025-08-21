@@ -584,7 +584,7 @@ const SettingsView: React.FC = () => {
                   justifyContent: 'center',
                 }}
               >
-                <img src='../../app-icon.png' alt='' />
+                <img src='./logo.png' alt='' />
               </div>
               <div style={{ flex: 1 }}>
                 <div
