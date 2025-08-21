@@ -7,6 +7,7 @@ The multi-language support feature will implement a comprehensive internationali
 ## Architecture
 
 ### Translation System Architecture
+
 ```
 Frontend (React)
 ├── I18nContext (Language state management)
@@ -22,6 +23,7 @@ Backend (Rust)
 ```
 
 ### Data Flow
+
 1. User selects language → I18nContext updates → localStorage saves preference
 2. App initialization → Load saved language preference → Apply to all components
 3. Component renders → useTranslation hook → Get translated text → Display
@@ -29,6 +31,7 @@ Backend (Rust)
 ## Components and Interfaces
 
 ### I18nContext Interface
+
 ```typescript
 interface I18nContextType {
   language: 'zh' | 'en';
@@ -39,6 +42,7 @@ interface I18nContextType {
 ```
 
 ### Translation File Structure
+
 ```typescript
 interface TranslationKeys {
   // Navigation
@@ -49,7 +53,7 @@ interface TranslationKeys {
     logs: string;
     subscription: string;
   };
-  
+
   // Dashboard
   dashboard: {
     title: string;
@@ -72,7 +76,7 @@ interface TranslationKeys {
       autoMonitorDesc: string;
     };
   };
-  
+
   // Common UI elements
   common: {
     loading: string;
@@ -85,7 +89,7 @@ interface TranslationKeys {
     edit: string;
     add: string;
   };
-  
+
   // Messages and notifications
   messages: {
     appStarted: string;
@@ -99,7 +103,7 @@ interface TranslationKeys {
     folderSelectionCancelled: string;
     subscriptionRequired: string;
   };
-  
+
   // Error messages
   errors: {
     selectFolderFirst: string;
@@ -112,6 +116,7 @@ interface TranslationKeys {
 ```
 
 ### Language Selector Component
+
 ```typescript
 interface LanguageSelectorProps {
   className?: string;
@@ -120,6 +125,7 @@ interface LanguageSelectorProps {
 ```
 
 ### useTranslation Hook
+
 ```typescript
 interface UseTranslationReturn {
   t: (key: string, params?: Record<string, string>) => string;
@@ -132,23 +138,25 @@ interface UseTranslationReturn {
 ## Data Models
 
 ### Translation Storage
+
 - **Location**: `src/locales/` directory
 - **Files**: `zh.json`, `en.json`
 - **Format**: Nested JSON objects with dot-notation keys
 - **Fallback**: Chinese as default, key display if translation missing
 
 ### Language Preference Storage
+
 - **Frontend**: localStorage key `fileSortify_language`
 - **Backend**: Integrated into existing config system in Rust
 - **Default**: 'zh' (Chinese)
 - **Validation**: Enum validation for supported languages
 
 ### Configuration Integration
+
 ```typescript
 // Extended Config interface
 interface Config {
   categories: FileCategory;
-  downloads_folder: string;
   auto_organize: boolean;
   notification_enabled: boolean;
   rules: any[];
@@ -159,16 +167,19 @@ interface Config {
 ## Error Handling
 
 ### Translation Loading Errors
+
 - **Missing Translation Files**: Fallback to Chinese, log warning
 - **Invalid JSON**: Display error message, use fallback translations
 - **Network Issues**: Use cached translations, retry mechanism
 
 ### Missing Translation Keys
+
 - **Strategy**: Display translation key as fallback
 - **Development Mode**: Console warnings for missing keys
 - **Production Mode**: Silent fallback with error logging
 
 ### Language Switching Errors
+
 - **Invalid Language Code**: Ignore request, maintain current language
 - **Storage Errors**: Continue with current session, log error
 - **Context Errors**: Fallback to default language
@@ -176,22 +187,26 @@ interface Config {
 ## Testing Strategy
 
 ### Unit Tests
+
 - **Translation Hook**: Test key resolution, parameter interpolation
 - **I18nContext**: Test language switching, persistence
 - **Language Selector**: Test UI interactions, language changes
 - **Translation Files**: Validate JSON structure, key completeness
 
 ### Integration Tests
+
 - **Component Integration**: Test translated text rendering
 - **Storage Integration**: Test language preference persistence
 - **Context Integration**: Test provider/consumer relationships
 
 ### End-to-End Tests
+
 - **Language Switching**: Full user flow testing
 - **Persistence**: Test language retention across sessions
 - **Component Coverage**: Verify all UI elements are translated
 
 ### Translation Validation
+
 - **Key Completeness**: Automated checks for missing translations
 - **Parameter Validation**: Test parameter interpolation
 - **Character Encoding**: Test Chinese character display
@@ -200,21 +215,25 @@ interface Config {
 ## Implementation Considerations
 
 ### Performance Optimizations
+
 - **Lazy Loading**: Load only current language translations
 - **Memoization**: Cache translated strings to prevent re-computation
 - **Bundle Splitting**: Separate translation files from main bundle
 
 ### Accessibility
+
 - **Screen Readers**: Ensure translated content is accessible
 - **Language Attributes**: Set appropriate HTML lang attributes
 - **RTL Support**: Future-ready for right-to-left languages
 
 ### Maintenance
+
 - **Translation Management**: Clear process for adding new translations
 - **Key Naming**: Consistent naming convention for translation keys
 - **Documentation**: Guidelines for developers adding new translatable content
 
 ### Backend Integration
+
 - **Rust Configuration**: Extend existing config system for language preference
 - **Notification Localization**: Translate system notifications
 - **Error Message Translation**: Localize backend error messages sent to frontend
