@@ -131,7 +131,6 @@ export class TauriAPI {
       // Return default config for web mode
       return {
         categories: {},
-        downloads_folder: '',
         auto_organize: false,
         notification_enabled: true,
         rules: [],

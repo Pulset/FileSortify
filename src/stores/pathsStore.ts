@@ -38,87 +38,46 @@ export const usePathsStore = create<PathsState>()(
       loading: false,
 
       loadPaths: async () => {
-        const { loading } = get();
-
-        if (loading) {
-          console.log('Already loading paths, skipping...');
-          return;
-        }
-
+        const { loading, paths } = get();
+        if (loading) return;
         set({ loading: true });
-
         try {
           if (tauriAPI.isInitialized()) {
-            console.log('Loading paths configuration...');
             const config = useConfigStore.getState().config;
-            console.log('Config loaded:', config);
-
-            if (config.paths && config.paths.length > 0) {
-              console.log('Found paths in config:', config.paths);
+            const initialized = localStorage.getItem('paths-initialized');
+            if (paths && paths.length > 0) {
+              set({ paths });
+            } else if (config.paths && config.paths.length > 0) {
               set({ paths: config.paths });
-            } else if (config.downloads_folder) {
-              console.log('Migrating old config:', config.downloads_folder);
-              const migratedPath: PathConfig = {
-                id: 'migrated-default',
-                path: config.downloads_folder,
-                name: t('paths.migratedDefaultDownloads'),
+            } else if (!initialized) {
+              // 首次启动，自动添加默认
+              const defaultFolder = await tauriAPI.getDefaultDownloadsFolder();
+              const defaultPath: PathConfig = {
+                id: 'default-downloads',
+                path: defaultFolder,
+                name: t('paths.downloadsFolder'),
                 isMonitoring: false,
-                autoOrganize: config.auto_organize || false,
+                autoOrganize: false,
                 stats: {
                   filesOrganized: 0,
                   lastOrganized: null,
                   monitoringSince: null,
                 },
               };
-              const newPaths = [migratedPath];
-              set({ paths: newPaths });
-
+              set({ paths: [defaultPath] });
               try {
-                const updatedConfig = { ...config, paths: newPaths };
+                const updatedConfig = { ...config, paths: [defaultPath] };
                 await useConfigStore.getState().saveConfig(updatedConfig);
-                console.log('Migration config saved');
-              } catch (error) {
-                console.error('Failed to save migrated config:', error);
-              }
+              } catch {}
+              localStorage.setItem('paths-initialized', 'true');
             } else {
-              console.log('No existing config, creating default path...');
-              try {
-                const defaultFolder =
-                  await tauriAPI.getDefaultDownloadsFolder();
-                console.log('Default folder:', defaultFolder);
-                const defaultPath: PathConfig = {
-                  id: 'default-downloads',
-                  path: defaultFolder,
-                  name: t('paths.downloadsFolder'),
-                  isMonitoring: false,
-                  autoOrganize: false,
-                  stats: {
-                    filesOrganized: 0,
-                    lastOrganized: null,
-                    monitoringSince: null,
-                  },
-                };
-                const newPaths = [defaultPath];
-                set({ paths: newPaths });
-
-                try {
-                  const updatedConfig = { ...config, paths: newPaths };
-                  await useConfigStore.getState().saveConfig(updatedConfig);
-                  console.log('Default config saved');
-                } catch (error) {
-                  console.error('Failed to save default config:', error);
-                }
-              } catch (error) {
-                console.error('Failed to get default folder:', error);
-                set({ paths: [] });
-              }
+              // 用户主动清空后，不再自动添加
+              set({ paths: [] });
             }
           } else {
-            console.log('Tauri not initialized, setting empty paths');
             set({ paths: [] });
           }
-        } catch (error) {
-          console.error('Failed to load paths:', error);
+        } catch {
           set({ paths: [] });
         } finally {
           set({ loading: false });

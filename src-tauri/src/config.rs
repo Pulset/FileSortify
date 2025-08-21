@@ -37,9 +37,6 @@ pub struct Config {
     pub version: String,
     pub description: String,
     pub paths: Option<Vec<PathConfig>>,
-    // 向后兼容的旧字段
-    #[serde(rename = "downloadsFolder")]
-    pub downloads_folder: Option<String>,
     #[serde(rename = "autoOrganize")]
     pub auto_organize: Option<bool>,
     #[serde(rename = "notificationEnabled")]
@@ -167,7 +164,6 @@ impl Default for Config {
             version: "1.0".to_string(),
             description: t("config_file_description"),
             paths: Some(vec![]),
-            downloads_folder: None,
             auto_organize: None,
             notification_enabled: None,
             rules: None,

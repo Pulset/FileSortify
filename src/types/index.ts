@@ -22,8 +22,6 @@ export interface PathConfig {
 
 export interface Config {
   categories: FileCategory; // 全局分类规则
-  // 保持向后兼容性
-  downloads_folder?: string;
   auto_organize?: boolean;
   notification_enabled?: boolean;
   rules?: any[];
