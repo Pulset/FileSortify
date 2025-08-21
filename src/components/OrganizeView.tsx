@@ -92,6 +92,19 @@ const OrganizeView: React.FC<OrganizeViewProps> = () => {
 
     if (confirmed) {
       try {
+        // 如果当前路径已开启监控，先关闭监控
+        if (path.isMonitoring) {
+          try {
+            await togglePathMonitoring(pathId);
+          } catch (err) {
+            // 关闭监控失败也允许继续删除，但给出提示
+            const msg = err instanceof Error ? err.message : err;
+            addLog(
+              `⚠️ ${t('errors.monitoringToggleFailed')}: ${msg}`,
+              'warning'
+            );
+          }
+        }
         await removePath(pathId);
         addLog(`✅ ${t('organize.pathDeleted', { name: path.name })}`);
       } catch (error) {
