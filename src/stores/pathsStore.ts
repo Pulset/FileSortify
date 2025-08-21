@@ -3,34 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { PathConfig } from '../types';
 import { tauriAPI } from '../utils/tauri';
 import { useConfigStore } from './configStore';
-import zh from '../locales/zh.json';
-import en from '../locales/en.json';
-
-// 轻量级翻译工具（供非 React 环境使用）
-type Lang = 'en' | 'zh';
-const dictionaries = { en, zh } as const;
-const getCurrentLanguage = (): Lang => {
-  const saved = (localStorage.getItem('app-language') ||
-    localStorage.getItem('language')) as Lang | null;
-  return saved === 'zh' ? 'zh' : 'en';
-};
-const t = (key: string, params?: Record<string, any>): string => {
-  const lang = getCurrentLanguage();
-  const dict: any = dictionaries[lang];
-  const parts = key.split('.');
-  let value: any = dict;
-  for (const p of parts) {
-    value = value?.[p];
-    if (value === undefined) return key;
-  }
-  if (typeof value !== 'string') return key;
-  if (params) {
-    return value.replace(/\{\{(\w+)\}\}/g, (match, k) =>
-      params && k in params ? String(params[k]) : match
-    );
-  }
-  return value;
-};
+import { t } from '../contexts/I18nContext';
 
 interface PathsState {
   paths: PathConfig[];

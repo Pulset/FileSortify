@@ -708,11 +708,10 @@ const SettingsView: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
+                      userSelect: 'text',
                     }}
                   >
-                    <a href='mailto:support@picasso-designs.com'>
-                      support@picasso-designs.com
-                    </a>
+                    support@picasso-designs.com
                   </div>
                 </div>
               </div>

@@ -1,3 +1,6 @@
+// 全局 t 方法，初始为 key=>key，I18nProvider 挂载后会自动指向当前语言
+export let t: (key: string, params?: Record<string, any>) => string = (key) =>
+  key;
 import React, {
   createContext,
   useContext,
@@ -114,10 +117,12 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children }) => {
     }
   };
 
-  const t = (key: string, params?: Record<string, any>) => {
+  const tInner = (key: string, params?: Record<string, any>) => {
     if (!isLoaded) return key;
     return translate(language, key, params);
   };
+  // 让全局 t 始终指向当前语言
+  t = tInner;
 
   // 在语言资源加载完成前显示loading
   if (!isLoaded) {
@@ -125,7 +130,7 @@ export const I18nProvider: React.FC<I18nProviderProps> = ({ children }) => {
   }
 
   return (
-    <I18nContext.Provider value={{ language, setLanguage, t }}>
+    <I18nContext.Provider value={{ language, setLanguage, t: tInner }}>
       {children}
     </I18nContext.Provider>
   );
