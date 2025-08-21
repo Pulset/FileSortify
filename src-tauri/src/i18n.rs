@@ -93,7 +93,7 @@ lazy_static! {
         en.insert("category_programs", "Programs");
         en.insert("category_code", "Code");
         en.insert("category_fonts", "Fonts");
-        en.insert("category_others", "Others");
+        // en.insert("category_others", "Others");
         
         // 新增的翻译键
         en.insert("invalid_subscription_plan", "Invalid subscription plan");
@@ -200,7 +200,7 @@ lazy_static! {
         zh.insert("category_programs", "程序");
         zh.insert("category_code", "代码");
         zh.insert("category_fonts", "字体");
-        zh.insert("category_others", "其他");
+        // zh.insert("category_others", "其他");
         
         zh.insert("monitoring_stopped_title", "文件监控已停止");
         zh.insert("monitoring_stopped_body", "文件自动分类监控已停止");

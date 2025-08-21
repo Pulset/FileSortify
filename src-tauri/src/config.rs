@@ -88,11 +88,7 @@ impl Config {
     }
     
     pub fn remove_category(&mut self, name: &str) -> bool {
-        if name != t("category_others") {
-            self.categories.remove(name).is_some()
-        } else {
-            false
-        }
+        self.categories.remove(name).is_some()
     }
     
     pub fn update_category(&mut self, name: String, extensions: Vec<String>) -> bool {

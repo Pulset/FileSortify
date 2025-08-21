@@ -304,14 +304,12 @@ impl fileSortify {
     }
     
     fn create_folders(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // 直接在下载目录下生成分类文件夹
+        // 创建所有分类文件夹（不再区分“其他”）
         for category in self.config.categories.keys() {
-            if *category != t("category_others") {
-                let category_path = self.downloads_path.join(category);
-                if !category_path.exists() {
-                    fs::create_dir_all(&category_path)?;
-                    self.emit_log(&t_format("create_folder", &[category]), "info");
-                }
+            let category_path = self.downloads_path.join(category);
+            if !category_path.exists() {
+                fs::create_dir_all(&category_path)?;
+                self.emit_log(&t_format("create_folder", &[category]), "info");
             }
         }
         Ok(())
@@ -324,14 +322,15 @@ impl fileSortify {
     fn get_file_category_static(file_path: &Path, config: &Config) -> Option<String> {
         let extension = file_path.extension()
             .and_then(|ext| ext.to_str())
-            .map(|ext| format!(".{}", ext.to_lowercase()))?;
-        
-        for (category, extensions) in &config.categories {
-            if category != &t("category_others") && extensions.contains(&extension) {
-                return Some(category.clone());
+            .map(|ext| format!(".{}", ext.to_lowercase()));
+        if let Some(ext) = extension {
+            for (category, extensions) in &config.categories {
+                if extensions.contains(&ext) {
+                    return Some(category.clone());
+                }
             }
         }
-        
+        // 没有匹配到规则时返回 None
         None
     }
     
