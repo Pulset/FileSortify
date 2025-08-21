@@ -708,7 +708,6 @@ const SettingsView: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
-                      userSelect: 'text',
                     }}
                   >
                     support@picasso-designs.com
