@@ -24,7 +24,8 @@
     "template-oss-apply": "template-oss-apply --force",
     "snap": "tap",
     "test": "tap",
-    "posttest": "npm run lint"
+    "posttest": "npm run lint",
+    "generate-update": "node scripts/generate-update-with-signatures.cjs 1.0.0 'v1.0.0'"
   },
   "keywords": [
     "FileSortify",
