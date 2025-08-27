@@ -56,7 +56,8 @@ const config = {
   notes: args.notes || process.argv[3] || 'FileSortify 版本更新',
   pubDate: new Date().toISOString(),
   baseUrl:
-    args.baseUrl || 'https://oss.picasso-designs.com/FileSortify/releases',
+    args.baseUrl ||
+    'https://filesortify.geekfan-bo.workers.dev/FileSortify/releases',
 };
 
 const workspaceRoot = path.join(__dirname, '..');
@@ -76,7 +77,7 @@ const PLATFORMS = [
     tarRel: ['macos', 'File Sortify.app.tar.gz'],
     dmgRel: ['dmg', `File Sortify_${config.version}_aarch64.dmg`],
     publicUrl: (v) =>
-      `${config.baseUrl}/v${v}/darwin-aarch64/File%20Sortify.app.tar.gz`,
+      `${config.baseUrl}/v${v}/darwin-aarch64/File Sortify.app.tar.gz`,
   },
   {
     id: 'darwin-x86_64',
@@ -91,7 +92,7 @@ const PLATFORMS = [
     tarRel: ['macos', 'File Sortify.app.tar.gz'],
     dmgRel: ['dmg', `File Sortify_${config.version}_x64.dmg`],
     publicUrl: (v) =>
-      `${config.baseUrl}/v${v}/darwin-x86_64/File%20Sortify.app.tar.gz`,
+      `${config.baseUrl}/v${v}/darwin-x86_64/File Sortify.app.tar.gz`,
   },
   {
     id: 'linux-x86_64',
@@ -106,7 +107,7 @@ const PLATFORMS = [
     tarRel: ['macos', 'File Sortify.app.tar.gz'],
     dmgRel: ['dmg', `File Sortify_${config.version}_aarch64.dmg`],
     publicUrl: (v) =>
-      `${config.baseUrl}/v${v}/linux-x86_64/File%20Sortify.app.tar.gz`,
+      `${config.baseUrl}/v${v}/linux-x86_64/File Sortify.app.tar.gz`,
   },
   {
     id: 'windows-x86_64',
@@ -121,7 +122,7 @@ const PLATFORMS = [
     tarRel: ['macos', 'File Sortify.app.tar.gz'],
     dmgRel: ['dmg', `File Sortify_${config.version}_aarch64.dmg`],
     publicUrl: (v) =>
-      `${config.baseUrl}/v${v}/windows-x86_64/File%20Sortify.app.tar.gz`,
+      `${config.baseUrl}/v${v}/windows-x86_64/File Sortify.app.tar.gz`,
   },
   // "linux-x86_64": {
   //           "signature": "",

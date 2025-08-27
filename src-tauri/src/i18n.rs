@@ -143,6 +143,10 @@ lazy_static! {
         en.insert("update_scheduler_config_success", "Update scheduler config saved successfully");
         en.insert("update_scheduler_config_failed", "Failed to save update scheduler config: {}");
         en.insert("create_folder", "Create folder: {}");
+        
+        // 新增的文件监控键
+        en.insert("file_modify_event_detected", "File modify event detected, count: {}");
+        en.insert("file_other_event_detected", "File other event detected, count: {}");
 
         // 中文翻译
         let mut zh = HashMap::new();
@@ -255,6 +259,10 @@ lazy_static! {
         zh.insert("update_scheduler_config_success", "更新调度器配置保存成功");
         zh.insert("update_scheduler_config_failed", "保存更新调度器配置失败: {}");
         en.insert("create_folder", "创建文件夹: {}");
+        
+        // 新增的文件监控键
+        zh.insert("file_modify_event_detected", "检测到文件修改事件，文件数量: {}");
+        zh.insert("file_other_event_detected", "检测到其他文件事件，文件数量: {}");
 
         translations.insert(Language::English, en);
         translations.insert(Language::Chinese, zh);
