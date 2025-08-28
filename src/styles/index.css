@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 基础样式 - 使用 @layer 确保不覆盖 Tailwind 样式 */
 @layer base {
@@ -10,7 +10,6 @@
 }
 
 @layer base {
-
   /* 允许输入框和文本区域选择文本 */
   input,
   textarea,
@@ -22,7 +21,8 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+      'Helvetica Neue', sans-serif;
     background: #f8f9fa;
     color: #1a1a1a;
     overflow: hidden;
@@ -39,6 +39,133 @@
 }
 
 @layer components {
+  /* 历史记录表格样式 */
+  .history-list-table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .history-table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2.5fr 1.5fr 1fr;
+    gap: 16px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e5e7;
+    font-weight: 600;
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .history-table-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .history-table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2.5fr 1.5fr 1fr;
+    gap: 16px;
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    align-items: center;
+    transition: background-color 0.2s ease;
+  }
+
+  .history-table-row:hover {
+    background-color: #f9fafb;
+  }
+
+  .history-table-row:last-child {
+    border-bottom: none;
+  }
+
+  .history-col-file .file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .history-col-file .file-icon {
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+
+  .history-col-file .file-name {
+    font-weight: 600;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .history-col-category .category-tag {
+    display: inline-block;
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .history-col-path .path-text {
+    color: #6b7280;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
+
+  .history-col-time .time-text {
+    color: #6b7280;
+    font-size: 12px;
+  }
+
+  .history-col-source .source-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .history-col-source .source-badge.manual {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .history-col-source .source-badge.monitoring {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .btn.small {
+    padding: 6px 12px;
+    font-size: 12px;
+    height: auto;
+    min-height: 28px;
+  }
+
+  .btn.small svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .spinner.small {
+    width: 12px;
+    height: 12px;
+    border-width: 1px;
+  }
 
   /* 应用标题栏 */
   .app-titlebar {
@@ -59,7 +186,7 @@
   }
 
   .app-icon {
-    color: #007AFF;
+    color: #007aff;
     display: flex;
     align-items: center;
   }
@@ -92,7 +219,7 @@
   }
 
   .app-logo {
-    color: #007AFF;
+    color: #007aff;
     display: flex;
     justify-content: center;
   }
@@ -125,7 +252,7 @@
   }
 
   .nav-item.active {
-    background: #007AFF;
+    background: #007aff;
     color: white;
   }
 
@@ -226,15 +353,15 @@
   }
 
   .stat-icon.files {
-    background: linear-gradient(135deg, #007AFF, #0056CC);
+    background: linear-gradient(135deg, #007aff, #0056cc);
   }
 
   .stat-icon.time {
-    background: linear-gradient(135deg, #34C759, #28A745);
+    background: linear-gradient(135deg, #34c759, #28a745);
   }
 
   .stat-icon.monitor {
-    background: linear-gradient(135deg, #FF9500, #E8890B);
+    background: linear-gradient(135deg, #ff9500, #e8890b);
   }
 
   .stat-content {
@@ -286,19 +413,19 @@
   }
 
   .action-btn:hover {
-    border-color: #007AFF;
+    border-color: #007aff;
     box-shadow: 0 2px 8px rgba(0, 122, 255, 0.1);
   }
 
   .action-btn.primary {
-    background: #007AFF;
-    border-color: #007AFF;
+    background: #007aff;
+    border-color: #007aff;
     color: white;
   }
 
   .action-btn.primary:hover {
-    background: #0056CC;
-    border-color: #0056CC;
+    background: #0056cc;
+    border-color: #0056cc;
   }
 
   .action-btn .btn-icon {
@@ -333,7 +460,7 @@
 
   /* 按钮样式 */
   .btn {
-    background: #007AFF;
+    background: #007aff;
     color: white;
     border: none;
     border-radius: 6px;
@@ -348,7 +475,7 @@
   }
 
   .btn:hover {
-    background: #0056CC;
+    background: #0056cc;
   }
 
   .btn:disabled {
@@ -389,7 +516,7 @@
 
   .form-input:focus {
     outline: none;
-    border-color: #007AFF;
+    border-color: #007aff;
     box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
   }
 
@@ -406,7 +533,7 @@
     width: 20px;
     height: 20px;
     border: 2px solid #e5e5e7;
-    border-top: 2px solid #007AFF;
+    border-top: 2px solid #007aff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-right: 8px;
@@ -475,7 +602,7 @@
   /* 焦点样式 */
   button:focus-visible,
   input:focus-visible {
-    outline: 2px solid #007AFF;
+    outline: 2px solid #007aff;
     outline-offset: 2px;
   }
 
@@ -501,7 +628,7 @@
   .setting-icon {
     width: 20px;
     height: 20px;
-    color: #007AFF;
+    color: #007aff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -511,6 +638,10 @@
     font-size: 16px;
     font-weight: 600;
     color: #1a1a1a;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .input-group {
@@ -837,7 +968,8 @@
     padding: 16px;
     height: 400px;
     overflow-y: auto;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+      'Courier New', monospace;
     font-size: 12px;
     line-height: 1.5;
   }
@@ -945,23 +1077,23 @@
   }
 
   .pricing-card:hover {
-    border-color: #007AFF;
+    border-color: #007aff;
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 122, 255, 0.15);
   }
 
   .pricing-card.recommended {
-    border-color: #007AFF;
+    border-color: #007aff;
     box-shadow: 0 4px 16px rgba(0, 122, 255, 0.1);
   }
 
   .pricing-card.recommended::before {
-    content: "推荐";
+    content: '推荐';
     position: absolute;
     top: -10px;
     left: 50%;
     transform: translateX(-50%);
-    background: #007AFF;
+    background: #007aff;
     color: white;
     padding: 4px 12px;
     border-radius: 12px;
@@ -979,7 +1111,7 @@
   .plan-price {
     font-size: 32px;
     font-weight: 800;
-    color: #007AFF;
+    color: #007aff;
     margin-bottom: 4px;
   }
 
@@ -1004,7 +1136,7 @@
   }
 
   .plan-features li::before {
-    content: "✓";
+    content: '✓';
     position: absolute;
     left: 0;
     color: #10b981;
@@ -1109,7 +1241,7 @@
 
   .edit-name-btn:hover {
     background: #f3f4f6;
-    color: #007AFF;
+    color: #007aff;
   }
 
   .edit-name-form {
@@ -1156,7 +1288,8 @@
   .path-location {
     font-size: 13px;
     color: #6b7280;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+      'Courier New', monospace;
     background: #f8f9fa;
     padding: 8px 10px;
     border-radius: 4px;
@@ -1411,7 +1544,8 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+      'Helvetica Neue', sans-serif;
   }
 
   .progress-section {
@@ -1440,7 +1574,7 @@
 
   .progress-fill {
     height: 100%;
-    background: #007AFF;
+    background: #007aff;
     border-radius: 4px;
     transition: width 0.3s ease;
   }
@@ -1462,12 +1596,12 @@
   }
 
   .primary-btn {
-    background: #007AFF;
+    background: #007aff;
     color: white;
   }
 
   .primary-btn:hover {
-    background: #0056CC;
+    background: #0056cc;
   }
 
   .secondary-btn {
@@ -1517,4 +1651,243 @@
       padding: 12px;
     }
   }
+}
+
+/* 撤销历史样式 */
+.undo-history-modal {
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+}
+
+.undo-history-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+
+.undo-history-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.undo-history-item:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.undo-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  color: #6b7280;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.undo-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.undo-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.file-name {
+  font-weight: 500;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.undo-arrow {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.category-name {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.undo-item-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.undo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.undo-btn:hover {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.undo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.undo-btn .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #dc2626;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
+  height: auto;
+  min-height: auto;
+}
+
+/* History View Styles */
+.history-content {
+  background: #1a1a1a;
+  color: #e5e5e7;
+  min-height: 400px;
+  padding: 16px;
+  border-radius: 0 0 8px 8px;
+}
+
+.no-history {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.no-history-icon {
+  margin-bottom: 16px;
+}
+
+.no-history p {
+  font-size: 14px;
+  margin: 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: #2d2d2d;
+  border: 1px solid #404040;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  background: #333333;
+  border-color: #525252;
+}
+
+.history-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #404040;
+  color: #9ca3af;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.history-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.file-name {
+  color: #f3f4f6;
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.undo-arrow {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.category-name {
+  background: #1e40af;
+  color: #dbeafe;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.operation-type {
+  color: #9ca3af;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.history-item-meta {
+  color: #6b7280;
+  font-size: 12px;
 }

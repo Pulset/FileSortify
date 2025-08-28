@@ -7,9 +7,10 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use serde::{Deserialize, Serialize};
 use std::thread::JoinHandle;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use tauri::{AppHandle, Emitter};
 use chrono;
+use rand;
 
 use crate::config::Config;
 use crate::i18n::{t, t_format};
@@ -24,9 +25,75 @@ pub struct LogMessage {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileOrganizedEvent {
     pub file_name: String,
+    pub actual_file_name: String, // 实际移动后的文件名（可能被重命名）
     pub category: String,
     pub timestamp: String,
     pub folder_path: String,
+    pub original_path: String, // 原始完整路径
+    pub moved_to_path: String, // 实际移动到的完整路径
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UndoAction {
+    pub id: String,
+    pub file_name: String,
+    pub original_path: PathBuf,
+    pub moved_to_path: PathBuf,
+    pub category: String,
+    pub timestamp: String,
+    pub downloads_path: PathBuf,
+    pub source: String, // "manual" or "monitoring"
+}
+
+#[derive(Debug, Clone)]
+pub struct UndoHistory {
+    actions: VecDeque<UndoAction>,
+    max_size: usize,
+}
+
+impl UndoHistory {
+    pub fn new(max_size: usize) -> Self {
+        Self {
+            actions: VecDeque::new(),
+            max_size,
+        }
+    }
+
+    pub fn add_action(&mut self, action: UndoAction) {
+        if self.actions.len() >= self.max_size {
+            self.actions.pop_front();
+        }
+        self.actions.push_back(action);
+    }
+
+    pub fn get_latest_actions(&self, count: usize) -> Vec<UndoAction> {
+        self.actions
+            .iter()
+            .rev()
+            .take(count)
+            .cloned()
+            .collect()
+    }
+
+    pub fn remove_action(&mut self, action_id: &str) -> Option<UndoAction> {
+        if let Some(pos) = self.actions.iter().position(|a| a.id == action_id) {
+            self.actions.remove(pos)
+        } else {
+            None
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.actions.clear();
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.actions.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.actions.len()
+    }
 }
 
 #[derive(Debug)]
@@ -36,6 +103,7 @@ pub struct fileSortify {
     pub monitoring_stop_signal: Option<Arc<AtomicBool>>,
     pub monitoring_thread: Option<JoinHandle<()>>,
     pub app_handle: Option<AppHandle>,
+    pub undo_history: UndoHistory,
 }
 
 impl Clone for fileSortify {
@@ -46,6 +114,7 @@ impl Clone for fileSortify {
             monitoring_stop_signal: None, // 新实例不继承监控状态
             monitoring_thread: None, // 新实例不继承线程句柄
             app_handle: self.app_handle.clone(),
+            undo_history: self.undo_history.clone(),
         }
     }
 }
@@ -54,12 +123,14 @@ impl fileSortify {
     pub fn new(downloads_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let downloads_path = PathBuf::from(downloads_path);
         let config = Config::load()?;
+        let undo_history = UndoHistory::new(50); // 最多保存50个撤销操作
         Ok(fileSortify {
             downloads_path,
             config,
             monitoring_stop_signal: None,
             monitoring_thread: None,
             app_handle: None,
+            undo_history,
         })
     }
 
@@ -90,13 +161,16 @@ impl fileSortify {
         }
     }
 
-    fn emit_file_organized(&self, file_name: &str, category: &str) {
+    fn emit_file_organized(&self, original_file_name: &str, actual_file_name: &str, category: &str, original_path: &Path, moved_to_path: &Path) {
         if let Some(app_handle) = &self.app_handle {
             let event = FileOrganizedEvent {
-                file_name: file_name.to_string(),
+                file_name: original_file_name.to_string(),
+                actual_file_name: actual_file_name.to_string(),
                 category: category.to_string(),
                 timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
                 folder_path: self.downloads_path.to_string_lossy().to_string(),
+                original_path: original_path.to_string_lossy().to_string(),
+                moved_to_path: moved_to_path.to_string_lossy().to_string(),
             };
             if let Err(e) = app_handle.emit("file-organized", &event) {
                 eprintln!("Failed to emit file organized event: {}", e);
@@ -122,7 +196,7 @@ impl fileSortify {
             }
             
             if let Some(category) = self.get_file_category(&path) {
-                if self.move_file(&path, &category)? {
+                if self.move_file(&path, &category, true)? { // 手动整理时记录撤销历史
                     files_moved += 1;
                 }
             } else {
@@ -295,22 +369,62 @@ impl fileSortify {
         None
     }
     
-    fn move_file(&self, source_path: &Path, category: &str) -> Result<bool, Box<dyn std::error::Error>> {
-    let result = Self::move_file_static(source_path, category, &self.downloads_path);
+    fn move_file(&mut self, source_path: &Path, category: &str, record_undo: bool) -> Result<bool, Box<dyn std::error::Error>> {
+        let filename = source_path.file_name()
+            .ok_or("Failed to get file name")?;
+        let destination_folder = self.downloads_path.join(category);
+        let mut destination_path = destination_folder.join(filename);
         
-        if result.is_ok() {
-            if let Some(filename) = source_path.file_name() {
-                if let Some(filename_str) = filename.to_str() {
-                    self.emit_log(&t_format("move_file_success", &[filename_str, category]), "success");
-                    self.emit_file_organized(filename_str, category);
+        // 如果目标文件已存在，添加数字后缀
+        let mut counter = 1;
+        let original_destination = destination_path.clone();
+        while destination_path.exists() {
+            if let Some(stem) = original_destination.file_stem().and_then(|s| s.to_str()) {
+                if let Some(ext) = original_destination.extension().and_then(|e| e.to_str()) {
+                    destination_path = destination_folder.join(format!("{}_{}.{}", stem, counter, ext));
+                } else {
+                    destination_path = destination_folder.join(format!("{}_{}", stem, counter));
                 }
+            }
+            counter += 1;
+        }
+        
+        // 执行文件移动
+        fs::rename(source_path, &destination_path)?;
+        
+        // 只在手动整理时记录撤销历史
+        if record_undo {
+            let undo_action = UndoAction {
+                id: format!("{}-{}", chrono::Local::now().timestamp_millis(), rand::random::<u32>()),
+                file_name: filename.to_string_lossy().to_string(),
+                original_path: source_path.to_path_buf(),
+                moved_to_path: destination_path.clone(),
+                category: category.to_string(),
+                timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
+                downloads_path: self.downloads_path.clone(),
+                source: "manual".to_string(),
+            };
+            
+            self.undo_history.add_action(undo_action);
+        }
+        
+        // 发送日志和事件
+        if let Some(filename) = source_path.file_name() {
+            if let Some(filename_str) = filename.to_str() {
+                // 获取实际移动后的文件名
+                let actual_filename = destination_path.file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or(filename_str);
+                
+                self.emit_log(&t_format("move_file_success", &[actual_filename, category]), "success");
+                self.emit_file_organized(filename_str, actual_filename, category, source_path, &destination_path);
             }
         }
         
-        result
+        Ok(true)
     }
     
-    fn move_file_static(source_path: &Path, category: &str, downloads_path: &Path) -> Result<bool, Box<dyn std::error::Error>> {
+    fn move_file_static(source_path: &Path, category: &str, downloads_path: &Path) -> Result<PathBuf, Box<dyn std::error::Error>> {
         let filename = source_path.file_name()
             .ok_or("Failed to get file name")?;
         let destination_folder = downloads_path.join(category);
@@ -329,10 +443,9 @@ impl fileSortify {
             counter += 1;
         }
         fs::rename(source_path, &destination_path)?;
-        // 注意：这里不发送日志，因为静态方法无法访问 app_handle
-        // 日志会在调用方法中发送
-        log::info!("Moved file: {:?} -> {}", filename, category);
-        Ok(true)
+        // 返回实际的目标路径
+        log::info!("Moved file: {:?} -> {:?}", filename, destination_path.file_name());
+        Ok(destination_path)
     }
     
     // 统一的文件事件处理方法
@@ -391,16 +504,24 @@ impl fileSortify {
         // 尝试分类和移动文件
         if let Some(category) = Self::get_file_category_static(path, config) {
             match Self::move_file_static(path, &category, downloads_path) {
-                Ok(_) => {
-                    emit_log(&t_format("new_file_categorized", &[file_name, &category]), "success");
+                Ok(actual_path) => {
+                    // 获取实际的文件名
+                    let actual_filename = actual_path.file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or(file_name);
+                    
+                    emit_log(&t_format("new_file_categorized", &[actual_filename, &category]), "success");
 
                     // 发送文件整理事件
                     if let Some(app_handle) = app_handle {
                         let event = FileOrganizedEvent {
                             file_name: file_name.to_string(),
+                            actual_file_name: actual_filename.to_string(),
                             category: category.clone(),
                             timestamp: chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string(),
                             folder_path: downloads_path.to_string_lossy().to_string(),
+                            original_path: path.to_string_lossy().to_string(),
+                            moved_to_path: actual_path.to_string_lossy().to_string(),
                         };
                         if let Err(e) = app_handle.emit("file-organized", &event) {
                             eprintln!("Failed to emit file organized event: {}", e);
@@ -462,5 +583,57 @@ impl fileSortify {
         }
 
         false
+    }
+    
+    // 撤销操作相关方法
+    pub fn get_undo_history(&self, count: usize) -> Vec<UndoAction> {
+        self.undo_history.get_latest_actions(count)
+    }
+    
+    pub fn undo_action(&mut self, action_id: &str) -> Result<String, Box<dyn std::error::Error>> {
+        let action = self.undo_history.remove_action(action_id)
+            .ok_or("Undo action not found")?;
+        
+        // 检查目标文件是否还存在
+        if !action.moved_to_path.exists() {
+            return Err(format!("File {} has been deleted or moved", action.file_name).into());
+        }
+        
+        // 检查原始路径是否被占用
+        if action.original_path.exists() {
+            return Err(format!("Original location {} is occupied", action.original_path.display()).into());
+        }
+        
+        // 执行撤销（将文件移回原位置）
+        fs::rename(&action.moved_to_path, &action.original_path)?;
+        
+        let message = t_format("undo_action_success", &[&action.file_name]);
+        self.emit_log(&message, "success");
+        
+        // 发送撤销事件
+        if let Some(app_handle) = &self.app_handle {
+            let undo_event = serde_json::json!({
+                "action_id": action.id,
+                "file_name": action.file_name,
+                "original_path": action.original_path,
+                "category": action.category,
+                "timestamp": chrono::Local::now().format("%Y/%m/%d %H:%M:%S").to_string()
+            });
+            
+            if let Err(e) = app_handle.emit("file-undone", &undo_event) {
+                eprintln!("Failed to emit undo event: {}", e);
+            }
+        }
+        
+        Ok(message)
+    }
+    
+    pub fn clear_undo_history(&mut self) {
+        self.undo_history.clear();
+        self.emit_log(&t("undo_history_cleared"), "info");
+    }
+    
+    pub fn get_undo_history_count(&self) -> usize {
+        self.undo_history.len()
     }
 }

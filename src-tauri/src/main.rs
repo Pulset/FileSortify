@@ -699,6 +699,132 @@ async fn sync_language(language: String) -> Result<(), String> {
     Ok(())
 }
 
+// 撤销相关命令
+#[tauri::command]
+async fn get_undo_history(
+    folder_path: String,
+    count: Option<usize>,
+    state: State<'_, AppState>,
+) -> Result<Vec<file_organizer::UndoAction>, String> {
+    let organizers = state.organizers.lock().await;
+    
+    if let Some(organizer) = organizers.get(&folder_path) {
+        let history_count = count.unwrap_or(10);
+        Ok(organizer.get_undo_history(history_count))
+    } else {
+        Err(t("no_monitoring_for_path"))
+    }
+}
+
+#[tauri::command]
+async fn undo_file_action(
+    folder_path: String,
+    action_id: String,
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    let mut organizers = state.organizers.lock().await;
+    
+    if let Some(organizer) = organizers.get_mut(&folder_path) {
+        match organizer.undo_action(&action_id) {
+            Ok(message) => {
+                // 发送通知
+                let _ = tauri_plugin_notification::NotificationExt::notification(&app_handle)
+                    .builder()
+                    .title(&t("undo_success_title"))
+                    .body(&message)
+                    .show();
+                Ok(message)
+            }
+            Err(e) => Err(t_format("undo_failed", &[&e.to_string()]))
+        }
+    } else {
+        Err(t("no_monitoring_for_path"))
+    }
+}
+
+#[tauri::command]
+async fn clear_undo_history(
+    folder_path: String,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let mut organizers = state.organizers.lock().await;
+    
+    if let Some(organizer) = organizers.get_mut(&folder_path) {
+        organizer.clear_undo_history();
+        Ok(t("undo_history_cleared"))
+    } else {
+        Err(t("no_monitoring_for_path"))
+    }
+}
+
+#[tauri::command]
+async fn get_undo_history_count(
+    folder_path: String,
+    state: State<'_, AppState>,
+) -> Result<usize, String> {
+    let organizers = state.organizers.lock().await;
+    
+    if let Some(organizer) = organizers.get(&folder_path) {
+        Ok(organizer.get_undo_history_count())
+    } else {
+        Err(t("no_monitoring_for_path"))
+    }
+}
+
+#[tauri::command]
+async fn move_file_direct(
+    source_path: String,
+    target_path: String,
+) -> Result<String, String> {
+    use std::fs;
+    use std::path::Path;
+    
+    // 检查源文件是否存在
+    if !Path::new(&source_path).exists() {
+        return Err(format!("源文件不存在: {}", source_path));
+    }
+    
+    // 准备目标路径，如果冲突则自动重命名
+    let target_path_buf = Path::new(&target_path);
+    let mut final_target_path = target_path_buf.to_path_buf();
+    
+    // 如果目标位置已被占用，添加数字后缀
+    let mut counter = 1;
+    let original_target = final_target_path.clone();
+    while final_target_path.exists() {
+        if let Some(stem) = original_target.file_stem().and_then(|s| s.to_str()) {
+            if let Some(ext) = original_target.extension().and_then(|e| e.to_str()) {
+                final_target_path = original_target.with_file_name(format!("{}_{}.{}", stem, counter, ext));
+            } else {
+                final_target_path = original_target.with_file_name(format!("{}_{}", stem, counter));
+            }
+        } else {
+            // 如果无法解析文件名，直接添加后缀
+            final_target_path = Path::new(&format!("{}_{}", target_path, counter)).to_path_buf();
+        }
+        counter += 1;
+        
+        // 防止无限循环
+        if counter > 1000 {
+            return Err("无法找到可用的文件名".to_string());
+        }
+    }
+    
+    // 确保目标目录存在
+    if let Some(parent) = final_target_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
+        }
+    }
+    
+    // 执行文件移动
+    fs::rename(&source_path, &final_target_path)
+        .map_err(|e| format!("文件移动失败: {}", e))?;
+    
+    Ok(format!("文件已成功移动: {} -> {}", source_path, final_target_path.display()))
+}
+
 // 在main函数中注册这个命令
 fn main() {
     // 初始化订阅状态和设置
@@ -750,6 +876,12 @@ fn main() {
             update_general_settings,
             update_setting,
             sync_language,
+            // 撤销相关命令
+            get_undo_history,
+            undo_file_action,
+            clear_undo_history,
+            get_undo_history_count,
+            move_file_direct,
             updater::check_update,
             updater::install_update,
             updater::scheduler::get_scheduler_config,

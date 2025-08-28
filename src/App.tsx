@@ -6,6 +6,7 @@ import {
   useConfigStore,
   useLoggerStore,
   useStatsStore,
+  useHistoryStore,
 } from './stores';
 import { I18nProvider, useI18n } from './contexts/I18nContext';
 import { message } from '@tauri-apps/plugin-dialog';
@@ -15,6 +16,7 @@ import Dashboard from './components/Dashboard';
 import OrganizeView from './components/OrganizeView';
 import RulesView from './components/RulesView';
 import LogsView from './components/LogsView';
+import HistoryView from './components/HistoryView';
 import SubscriptionView from './components/SubscriptionView';
 import SettingsView from './components/SettingsView';
 import { UpdateDialog } from './components/UpdateDialog';
@@ -29,6 +31,7 @@ function AppContent() {
   const { config, loading: configLoading, loadConfig } = useConfigStore();
   const { paths, loadPaths, organizePathFiles } = usePathsStore();
   const { calculateStatsFromPaths } = useStatsStore();
+  const { addHistoryEntry } = useHistoryStore();
 
   const handleOrganizeFiles = async (pathId: string) => {
     const path = paths.find((p) => p.id === pathId);
@@ -105,20 +108,36 @@ function AppContent() {
             async (event: {
               payload: {
                 file_name: string;
+                actual_file_name: string;
                 category: string;
                 timestamp: string;
                 folder_path?: string;
+                original_path: string;
+                moved_to_path: string;
               };
             }) => {
               const payload = event.payload;
               console.log('File organized event:', event);
               addLog(
                 t('messages.fileOrganized', {
-                  fileName: payload.file_name,
+                  fileName: payload.actual_file_name, // 使用实际的文件名
                   category: payload.category,
                 }),
                 'success'
               );
+              
+              // 添加到文件移动历史，使用实际的路径信息
+              if (payload.folder_path) {
+                addHistoryEntry({
+                  file_name: payload.actual_file_name, // 使用实际的文件名
+                  original_path: payload.original_path, // 使用实际的原始路径
+                  moved_to_path: payload.moved_to_path, // 使用实际的移动路径
+                  category: payload.category,
+                  timestamp: payload.timestamp,
+                  folder_path: payload.folder_path,
+                });
+              }
+              
               // 自动统计到 pathsStore
               if (payload.folder_path) {
                 const path = usePathsStore
@@ -141,7 +160,7 @@ function AppContent() {
           // 监听更新相关事件
           const unListen2 = tauriAPI.listen(
             'update-available',
-            (event: any) => {
+            () => {
               addLog(t('messages.updateAvailable'), 'info');
               setShowUpdateDialog(true);
             }
@@ -219,6 +238,8 @@ function AppContent() {
         return <RulesView config={config} loading={configLoading} />;
       case 'logs':
         return <LogsView />;
+      case 'history':
+        return <HistoryView />;
       case 'subscription':
         return <SubscriptionView />;
       case 'settings':

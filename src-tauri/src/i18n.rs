@@ -147,6 +147,13 @@ lazy_static! {
         // 新增的文件监控键
         en.insert("file_modify_event_detected", "File modify event detected, count: {}");
         en.insert("file_other_event_detected", "File other event detected, count: {}");
+        
+        // 撤销相关键
+        en.insert("undo_action_success", "Undo successful: {} moved back to original location");
+        en.insert("undo_history_cleared", "Undo history cleared");
+        en.insert("undo_success_title", "Undo Successful");
+        en.insert("undo_failed", "Undo failed: {}");
+        en.insert("no_monitoring_for_path", "No active monitoring for this path");
 
         // 中文翻译
         let mut zh = HashMap::new();
@@ -263,6 +270,13 @@ lazy_static! {
         // 新增的文件监控键
         zh.insert("file_modify_event_detected", "检测到文件修改事件，文件数量: {}");
         zh.insert("file_other_event_detected", "检测到其他文件事件，文件数量: {}");
+        
+        // 撤销相关键
+        zh.insert("undo_action_success", "撤销成功：{} 已移回原位置");
+        zh.insert("undo_history_cleared", "撤销历史已清空");
+        zh.insert("undo_success_title", "撤销成功");
+        zh.insert("undo_failed", "撤销失败：{}");
+        zh.insert("no_monitoring_for_path", "该路径未启动监控");
 
         translations.insert(Language::English, en);
         translations.insert(Language::Chinese, zh);

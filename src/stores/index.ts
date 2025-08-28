@@ -4,6 +4,7 @@ import { useConfigStore } from './configStore';
 import { useLoggerStore } from './loggerStore';
 import { useStatsStore } from './statsStore';
 import { useSubscriptionStore } from './subscriptionStore';
+import { useHistoryStore } from './historyStore';
 
 // 重新导出所有store hooks
 export {
@@ -12,6 +13,7 @@ export {
   useLoggerStore,
   useStatsStore,
   useSubscriptionStore,
+  useHistoryStore,
 };
 
 // Combined hooks for convenience
@@ -23,6 +25,7 @@ export const useAppStores = () => {
   const logger = useLoggerStore();
   const stats = useStatsStore();
   const subscription = useSubscriptionStore();
+  const history = useHistoryStore();
 
   return {
     paths,
@@ -30,6 +33,7 @@ export const useAppStores = () => {
     logger,
     stats,
     subscription,
+    history,
   };
 };
 
