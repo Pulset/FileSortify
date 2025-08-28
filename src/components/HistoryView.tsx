@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useI18n } from '../contexts/I18nContext';
 import { invoke } from '@tauri-apps/api/core';
-import { message } from '@tauri-apps/plugin-dialog';
+import { message, ask } from '@tauri-apps/plugin-dialog';
 import { useHistoryStore, usePathsStore } from '../stores';
 import { FileHistoryEntry } from '../stores/historyStore';
 import { useLoggerStore } from '../stores';
@@ -26,11 +26,10 @@ const HistoryView: React.FC = () => {
     }
 
     // 确认撤销操作
-    const confirmed =
-      (await message(t('history.confirmUndo'), {
-        title: t('history.undoAction'),
-        kind: 'warning',
-      })) !== null;
+    const confirmed = await ask(t('history.confirmUndo'), {
+      title: t('history.undoAction'),
+      kind: 'warning',
+    });
 
     if (!confirmed) return;
 
@@ -110,16 +109,15 @@ ${t('history.actualLocation')}: ${actualPath}`,
   };
 
   const handleClearHistory = async () => {
-    const confirmed =
-      (await message(t('history.confirmClearHistory'), {
-        title: t('history.clearHistory'),
-        kind: 'warning',
-      })) !== null;
+    const confirmed = await ask(t('history.confirmClearHistory'), {
+      title: t('history.clearHistory'),
+      kind: 'warning',
+    });
 
     if (!confirmed) return;
 
     try {
-      addLog(`🗑️ ${t('history.clearingHistory')}`, 'info');
+      // addLog(`🗑️ ${t('history.clearingHistory')}`, 'info');
 
       clearHistory();
 
@@ -228,15 +226,6 @@ ${t('history.actualLocation')}: ${actualPath}`,
                     <div key={action.id} className='history-table-row'>
                       <div className='history-col-file'>
                         <div className='file-info'>
-                          <svg
-                            width='16'
-                            height='16'
-                            viewBox='0 0 24 24'
-                            fill='currentColor'
-                            className='file-icon'
-                          >
-                            <path d='M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z' />
-                          </svg>
                           <span className='file-name'>{action.file_name}</span>
                         </div>
                       </div>
